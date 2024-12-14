@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollimca (OLLama IMage CAtegoriser)</title>
+    <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+    <style>
+        #progress {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <form id="form" action="/api/categorize">
+        <label for="dPath">Absolute path of the directory to crawl through:</label>
+        <input type="text" id="dPath" name="dPath" value=""><br>
+        <button hx-post="/api/categorize" hx-trigger="click" hx-swap="beforeend" hx-target="#progress" id="sendbutton" hx-indicator="#spinner" autofocus>Look for images and categorize them</button>
+    </form>
+    <img id="spinner" class="htmx-indicator" src="/imgs/spinner.gif">
+    <div id="progress"></div>
+</body>
+</html>
