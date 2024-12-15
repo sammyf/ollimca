@@ -4,6 +4,7 @@ import json
 from sqlite3 import sqlite_version
 
 import ollama
+from dotenv.cli import stream_file
 from flask import Flask, request, send_file, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import threading
@@ -24,7 +25,7 @@ CORS(app)
 global thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
 processed_files = []
-vision_model = "llama3.2-vision:latest"
+vision_model = "llama3.2-vision:11b-instruct-q8_0"
 embedding_model = "nomic-embed-text:latest"
 chroma_path = "/home/sammy/projects/Ollimca/db/ollimca_chroma.db"
 sqlite_path = "/home/sammy/projects/Ollimca/db/ollimca_sqlite3.db"
@@ -33,7 +34,7 @@ thread_locked = False
 chroma_client = None
 
 class ImageDescription(BaseModel):
-    content: str
+    description: str
     mood: str
     intent: str
     overall_color_scheme: str
@@ -78,10 +79,35 @@ def push_to_sqlite(image_path, image_description):
     conn.close()
     return new_id
 
-def push_to_chroma(id, image_path, description):
-    fulltext="content: "+description.content+"\nmood: "+description.mood+"\nintent: "+description.intent+"\ncolor_scheme: "+description.overall_color_scheme
+def update_content_in_sqlite(id, content):
+    conn = sqlite3.connect(sqlite_path)
+    cursor = conn.cursor()
+    # Data to be inserted
+    data = (content, id)
+    # Insert data into the table
+    cursor.execute('''
+    UPDATE images SET content=?
+    WHERE id=?
+    ''', data)
+
+    # Commit changes and close connection
+    conn.commit()
+    conn.close()
+    return
+
+def fill_processed_files():
+    conn = sqlite3.connect(sqlite_path)
+    cursor = conn.cursor()
+    cursor.execute('SELECT path FROM images')
+    paths = cursor.fetchall()
+    return [row[0] for row in paths]
+    conn.close()
+
+def push_to_chroma(dbid, image_path, description):
+    fulltext="description: "+description.description+"\nmood: "+description.mood+"\nintent: "+description.intent+"\ncolor_scheme: "+description.overall_color_scheme
+    print(fulltext)
     description_as_dict = {
-        "content":description.content,
+        "description":description.description,
         "mood":description.mood,
         "intent":description.intent,
         "color_scheme":description.overall_color_scheme
@@ -89,7 +115,7 @@ def push_to_chroma(id, image_path, description):
     collection = chroma_client.get_or_create_collection('images')
     response = ollama.embeddings(model=embedding_model, prompt=fulltext, keep_alive=-1, options={ temperature:0})
     embedding = response['embedding']
-    collection.add(ids=str(id), embeddings=embedding, documents=str(image_path), metadatas=description_as_dict)
+    collection.add(ids=str(dbid), embeddings=embedding, documents=str(image_path), metadatas=description_as_dict)
 
 def get_creation_time(image_path):
     try:
@@ -108,7 +134,7 @@ def get_creation_time(image_path):
     except Exception as e:
         return f"Error: {e}"
 
-def describe_and_store_image(str_image_path,id):
+def describe_and_store_image(str_image_path,dbid):
     image_path = Path(str_image_path)
 
     # Set up chat as usual
@@ -117,12 +143,8 @@ def describe_and_store_image(str_image_path,id):
         format=ImageDescription.model_json_schema(),  # Pass in the schema for the response
         messages=[
             {
-                'role': 'system',
-                'content': '"you are a professional categorizer of image. You look at images and extract content, mood, intent and overall color scheme of the image.'
-            },
-            {
                 'role': 'user',
-                'content': 'Tell me the following about this image : content, mood, intent, overall color scheme. be as detailed as possible in the field content.',
+                'content': 'Tell me the following about this image, be as detailed as possible: description, mood, intent, color names of the overall color scheme.',
                 'images': [image_path],
             },
         ],
@@ -133,8 +155,8 @@ def describe_and_store_image(str_image_path,id):
         stream=False,
     )
     answer = ImageDescription.model_validate_json(response.message.content)
-    push_to_chroma(id,str_image_path, answer)
-    return
+    push_to_chroma(dbid,str_image_path, answer)
+    return answer.description
 
 def store_meta(image_path):
     image = Image.open(image_path)
@@ -163,20 +185,28 @@ def store_meta(image_path):
              "height": height,
              "creation_date": creation_date
              }
-    id = push_to_sqlite(image_path, data)
-    return id
+    dbid = push_to_sqlite(image_path, data)
+    return dbid
 
 def file_generator(directory_path):
+        global processed_files
         thread_locked = True
         pattern = re.compile(r'.*.(jpg|jpeg|png)$', re.IGNORECASE)
+        processed_files = fill_processed_files()
         try:
             for root, _, files in os.walk(directory_path):
                 for file in files:
                     if pattern.match(file):
                         file_path = os.path.join(root, file)
                         print("Processing file: " + file_path)
-                        id = store_meta(file_path)
-                        describe_and_store_image(file_path, id)
+                        if file_path in processed_files:
+                            continue
+                        try:
+                            dbid = store_meta(file_path)
+                            content = describe_and_store_image(file_path, dbid)
+                            update_content_in_sqlite(dbid, content)
+                        except Exception as e:
+                            print(e)
                         processed_files.append(file_path)
         except Exception as e:
             thread_locked = False
@@ -186,7 +216,7 @@ def file_generator(directory_path):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    return "\n  * ".join(processed_files)
+    return "\n ".join(processed_files)
 
 @app.route("/api/categorize", methods=['POST'])
 def categorize():
@@ -209,7 +239,7 @@ def categorize():
 
 @app.route("/", methods=['GET'])
 def index():
-    with open("index.html", "r") as file:
+    with open("frontend/index.html", "r") as file:
         content = file.read()
     return content
 

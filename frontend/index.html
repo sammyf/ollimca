@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollimca (OLLama IMage CAtegoriser)</title>
+    <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+    <style>
+        #progress {
+            background: #111111;
+            color: #dddddd;
+            font-weight: bold;
+            font-size: small;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px inset #ccc;
+            min-height: 50px;
+        }
+
+        #controls {
+            background: #555555;
+            color: #dddddd;
+            font-weight: bold;
+            font-size: small;
+            margin-top: 20px;
+            padding: 10px;
+            min-height: 50px;
+            text-align: center;
+            width: 100%;
+        }
+
+        html {
+            background-color: #333;
+            color: #cccccc;
+        }
+
+        input {
+            background-color: #1d2b6a;
+            color: white;
+            font-family: bolder;
+            font-size: large;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        button {
+            background-color: #1d2b6a;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div id="controls">
+    <form id="form" action="/api/categorize">
+        <label for="dPath">Absolute path of the directory to crawl through:</label><br>
+        <input type="text" id="dPath" name="dPath" value=""><br>
+        <button hx-post="/api/categorize" hx-trigger="click" hx-swap="beforeend" hx-target="#progress" id="sendbutton" hx-indicator="#spinner" autofocus>Look for images and categorize them</button>
+    </form>
+</div>
+<img id="spinner" class="htmx-indicator" src="/imgs/spinner.gif">
+<div id="progress"></div>
+<script language="JavaScript" type="text/javascript">
+            // Function to fetch data from the API and update the progress div
+    function updateProgress() {
+        fetch('/api/status')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('progress').innerText = data;
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+                document.getElementById('progress').innerText = 'Error loading status';
+            });
+    }
+
+    // Set up a timer to call updateProgress every 5 seconds
+
+    document.getElementById('sendbutton').addEventListener('htmx:afterOnLoad', function() {
+        setInterval(updateProgress, 15000);
+    });
+</script>
+</body>
+</html>
