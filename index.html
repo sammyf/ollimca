@@ -22,5 +22,25 @@
     </form>
     <img id="spinner" class="htmx-indicator" src="/imgs/spinner.gif">
     <div id="progress"></div>
+    <script language="JavaScript" type="text/javascript">
+                // Function to fetch data from the API and update the progress div
+        function updateProgress() {
+            fetch('/api/status')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('progress').innerText = data;
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById('progress').innerText = 'Error loading status';
+                });
+        }
+
+        // Set up a timer to call updateProgress every 5 seconds
+
+        document.getElementById('sendbutton').addEventListener('htmx:afterOnLoad', function() {
+            setInterval(updateProgress, 15000);
+        });
+    </script>
 </body>
 </html>
