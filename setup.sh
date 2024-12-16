@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cp ollimca.py.dist ollimca.py
+
 # Default values
 DEFAULT_VISION_MODEL="moondream:latest"
 DEFAULT_EMBED_MODEL="nomic-embed-text:latest"

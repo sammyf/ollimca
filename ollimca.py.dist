@@ -25,10 +25,10 @@ CORS(app)
 
 global thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
-vision_model = "moondream:latest"
-embedding_model = "nomic-embed-text:latest"
-temperature = 0.5
-1
+vision_model = "VISION_MODEL"
+embedding_model = "EMBED_MODEL"
+temperature = TEMPERATURE
+
 chroma_path = os.path.join("db","ollimca_chroma.db")
 sqlite_path = os.path.join("db","ollimca_sqlite3.db")
 processed_files = []
