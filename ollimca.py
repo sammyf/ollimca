@@ -19,6 +19,7 @@ from PIL import Image, ExifTags
 import sqlite3
 import datetime
 import stat
+
 app = Flask(__name__)
 CORS(app)
 
@@ -213,6 +214,40 @@ def file_generator(directory_path):
             print(f"Error processing directory: {str(e)}\n")
         thread_locked = False
 
+@app.route('/api/query', methods=['POST'])
+def retrieve_memories():
+    data = request.get_json()
+    content = data.get('content')
+    mood = data.get('mood')
+    intent = data.get('intent')
+    colors = data.get('color')
+
+    search_query = ""
+    if content.strip() != "":
+        search_query += "description:"+content
+    if mood.strip() != "":
+        search_query += "\nmood:"+mood
+    if intent.strip() != "":
+        search_query += "\nintent:"+intent
+    if colors.strip() != "":
+        search_query += "\ncolors:"+colors
+
+    response =ollama.embeddings(
+        prompt=search_query,
+        model=embedding_model,
+        keep_alive=-1
+    )
+    client = chromadb.PersistentClient(chroma_path)
+    collection = client.get_or_create_collection(name='images')
+    results = collection.query(
+        query_embeddings = [response['embedding']],
+        n_results = 12
+    )
+    images = []
+    if len(results) > 0:
+        for document in results["documents"][0]:
+            images.append(document)
+    return jsonify( images ), 200
 
 @app.route('/api/status', methods=['GET'])
 def status():
@@ -236,6 +271,7 @@ def categorize():
     thread.start()
 
     return "processing ..."
+
 
 @app.route("/", methods=['GET'])
 def index():

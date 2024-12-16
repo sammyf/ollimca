@@ -5,4 +5,4 @@ pathlib
 pydantic
 chromadb
 pillow
-
+PyQt6
