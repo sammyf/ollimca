@@ -25,12 +25,13 @@ CORS(app)
 
 global thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
-processed_files = []
-vision_model = "llama3.2-vision:11b-instruct-q8_0"
-embedding_model = "nomic-embed-text:latest"
+vision_model = "VISION_MODEL"
+embedding_model = "EMBED_MODEL"
+temperature = TEMPERATURE
+
 chroma_path = "/home/sammy/projects/Ollimca/db/ollimca_chroma.db"
 sqlite_path = "/home/sammy/projects/Ollimca/db/ollimca_sqlite3.db"
-temperature = 0.5
+processed_files = []
 thread_locked = False
 chroma_client = None
 
@@ -215,12 +216,14 @@ def file_generator(directory_path):
         thread_locked = False
 
 @app.route('/api/query', methods=['POST'])
-def retrieve_memories():
+def find_images():
     data = request.get_json()
     content = data.get('content')
     mood = data.get('mood')
     intent = data.get('intent')
     colors = data.get('color')
+    page = data.get('page')
+    items_per_page = data.get('items_per_page')
 
     search_query = ""
     if content.strip() != "":
@@ -241,11 +244,16 @@ def retrieve_memories():
     collection = client.get_or_create_collection(name='images')
     results = collection.query(
         query_embeddings = [response['embedding']],
-        n_results = 60
+        n_results = (page*items_per_page),
     )
     images = []
     if len(results) > 0:
-        for document in results["documents"][0]:
+        cutoff = items_per_page * (page - 1)
+        if cutoff > 0:
+            documents = results["documents"][0][cutoff:]
+        else:
+            documents = results["documents"][0]
+        for document in documents:
             images.append(document)
     return jsonify( images ), 200
 
