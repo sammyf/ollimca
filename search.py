@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QTextEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QTextEdit
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
 import requests
@@ -53,7 +53,14 @@ class MainWindow(QMainWindow):
             border: 1px inset #ccc;
             min-height: 50px;
         """)
-        main_layout.addWidget(self.results_display)
+        # Set size policy to expand
+        self.results_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.results_display)
+        main_layout.addWidget(scroll_area)
+
 
     def on_search_clicked(self):
         content = self.inputs["Content"].text()
@@ -90,6 +97,7 @@ class MainWindow(QMainWindow):
         col = 0
         for path in image_paths:
             label = QLabel()
+            label.setFixedHeight(300)
             pixmap = QPixmap(path)
             if not pixmap.isNull():
                 label.setPixmap(pixmap.scaled(300, 300, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))  # Scale the image to fit within a width of 300 pixels

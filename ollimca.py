@@ -241,7 +241,7 @@ def retrieve_memories():
     collection = client.get_or_create_collection(name='images')
     results = collection.query(
         query_embeddings = [response['embedding']],
-        n_results = 12
+        n_results = 60
     )
     images = []
     if len(results) > 0:
