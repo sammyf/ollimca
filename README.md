@@ -38,3 +38,4 @@ implement them yet ... ¯\_(ツ)_/¯
 
 Heads up to the nice folks on the ollama Discord Server for their cheering and verbal abuse.
 
+![](/home/sammy/projects/Ollimca/screenshots/creepy.png)
