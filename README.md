@@ -38,4 +38,7 @@ implement them yet ... ¯\_(ツ)_/¯
 
 Heads up to the nice folks on the ollama Discord Server for their cheering and verbal abuse.
 
+<a href="https://www.buymeacoffee.com/socialnetwooky" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
 ![](screenshots/creepy.png)
+
