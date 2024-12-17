@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         search_form_layout = QHBoxLayout()
         search_form.setLayout(search_form_layout)
 
-        labels = ["Content", "Mood", "Intent", "Color"]
+        labels = ["Content", "Mood", "Color"]
         self.inputs = {}
 
         for label in labels:
@@ -80,7 +80,6 @@ class MainWindow(QMainWindow):
     def on_search_clicked(self):
         content = self.inputs["Content"].text()
         mood = self.inputs["Mood"].text()
-        intent = self.inputs["Intent"].text()
         color = self.inputs["Color"].text()
 
         # Send HTTP POST request to the backend
@@ -88,7 +87,6 @@ class MainWindow(QMainWindow):
         data = {
             "content": content,
             "mood": mood,
-            "intent": intent,
             "color": color,
             "page": self.current_page,
             "items_per_page": self.items_per_page,

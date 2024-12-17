@@ -25,9 +25,9 @@ CORS(app)
 
 global thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
-vision_model = "moondream:latest"
+vision_model = "llama3.2-vision:11b-instruct-q8_0"
 embedding_model = "nomic-embed-text:latest"
-temperature = 0.5
+temperature = 1.31
 1
 chroma_path = os.path.join("db","ollimca_chroma.db")
 sqlite_path = os.path.join("db","ollimca_sqlite3.db")
@@ -220,20 +220,17 @@ def find_images():
     data = request.get_json()
     content = data.get('content')
     mood = data.get('mood')
-    intent = data.get('intent')
     colors = data.get('color')
     page = data.get('page')
     items_per_page = data.get('items_per_page')
 
     search_query = ""
     if content.strip() != "":
-        search_query += "description:"+content
+        search_query += "description:\""+content+"\""
     if mood.strip() != "":
-        search_query += "\nmood:"+mood
-    if intent.strip() != "":
-        search_query += "\nintent:"+intent
+        search_query += "\nmood:\""+mood+"\""
     if colors.strip() != "":
-        search_query += "\ncolors:"+colors
+        search_query += "\ncolors:\""+colors+"\""
 
     response =ollama.embeddings(
         prompt=search_query,
