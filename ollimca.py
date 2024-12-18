@@ -25,10 +25,10 @@ CORS(app)
 
 global thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
-vision_model = "llama3.2-vision:11b-instruct-q8_0"
+vision_model = "moondream:latest"
 embedding_model = "nomic-embed-text:latest"
 temperature = 1.31
-1
+
 chroma_path = os.path.join("db","ollimca_chroma.db")
 sqlite_path = os.path.join("db","ollimca_sqlite3.db")
 processed_files = []
@@ -38,7 +38,6 @@ chroma_client = None
 class ImageDescription(BaseModel):
     description: str
     mood: str
-    intent: str
     overall_color_scheme: str
 
 def setup_sqlite():
@@ -106,12 +105,11 @@ def fill_processed_files():
     conn.close()
 
 def push_to_chroma(dbid, image_path, description):
-    fulltext="description: "+description.description+"\nmood: "+description.mood+"\nintent: "+description.intent+"\ncolor_scheme: "+description.overall_color_scheme
+    fulltext="description: "+description.description+"\nmood: "+description.mood+"\ncolor_scheme: "+description.overall_color_scheme
     print(fulltext)
     description_as_dict = {
         "description":description.description,
         "mood":description.mood,
-        "intent":description.intent,
         "color_scheme":description.overall_color_scheme
     }
     collection = chroma_client.get_or_create_collection('images')
@@ -136,17 +134,13 @@ def get_creation_time(image_path):
     except Exception as e:
         return f"Error: {e}"
 
-def describe_and_store_image(str_image_path,dbid):
-    image_path = Path(str_image_path)
-
-    # Set up chat as usual
+def complex_image_query(image_path):
     response = ollama.chat (
         model=vision_model,
-        format=ImageDescription.model_json_schema(),  # Pass in the schema for the response
         messages=[
             {
                 'role': 'user',
-                'content': 'Tell me the following about this image, be as detailed as possible: description, mood, intent, color names of the overall color scheme.',
+                'content': 'describe the content of that image. What can be seen? If there is text visible, what does it say? use detailed keywords!',
                 'images': [image_path],
             },
         ],
@@ -156,7 +150,38 @@ def describe_and_store_image(str_image_path,dbid):
         },
         stream=False,
     )
-    answer = ImageDescription.model_validate_json(response.message.content)
+    description = response.message.content
+
+    return description
+
+def simple_image_query(image_path):
+    response = ollama.chat (
+        model=vision_model,
+        format=ImageDescription.model_json_schema(),  # Pass in the schema for the response
+        messages=[
+            {
+                'role': 'user',
+                'content': 'Tell me the following about this image, be as detailed as possible: description, mood, color names of the overall color scheme.',
+                'images': [image_path],
+            },
+        ],
+        options={
+            'temperature': temperature,
+            'keep_alive': -1
+        },
+        stream=False,
+    )
+    return ImageDescription.model_validate_json(response.message.content)
+
+def describe_and_store_image(str_image_path,dbid, complex):
+    image_path = Path(str_image_path)
+
+    answer=simple_image_query(image_path)
+
+    if complex == 1:
+        description = complex_image_query(image_path)
+        answer.description = description
+
     push_to_chroma(dbid,str_image_path, answer)
     return answer.description
 
@@ -190,7 +215,7 @@ def store_meta(image_path):
     dbid = push_to_sqlite(image_path, data)
     return dbid
 
-def file_generator(directory_path):
+def file_generator(directory_path, complex):
         global processed_files
         thread_locked = True
         pattern = re.compile(r'.*.(jpg|jpeg|png)$', re.IGNORECASE)
@@ -205,7 +230,7 @@ def file_generator(directory_path):
                             continue
                         try:
                             dbid = store_meta(file_path)
-                            content = describe_and_store_image(file_path, dbid)
+                            content = describe_and_store_image(file_path, dbid, complex)
                             update_content_in_sqlite(dbid, content)
                         except Exception as e:
                             print(e)
@@ -226,11 +251,11 @@ def find_images():
 
     search_query = ""
     if content.strip() != "":
-        search_query += "description:\""+content+"\""
+        search_query += "description: .f\""+content+"\""
     if mood.strip() != "":
-        search_query += "\nmood:\""+mood+"\""
+        search_query += "\nmood: \""+mood+"\""
     if colors.strip() != "":
-        search_query += "\ncolors:\""+colors+"\""
+        search_query += "\noverall_color_scheme: \""+colors+"\""
 
     response =ollama.embeddings(
         prompt=search_query,
@@ -260,8 +285,11 @@ def status():
 
 @app.route("/api/categorize", methods=['POST'])
 def categorize():
+    complex = 0
     # Decode the bytes-like object to a string
     directory_path = request.form['dPath']
+    if "complex" in request.form:
+        complex = 1
     if thread_locked:
         return "processing still running"
 
@@ -271,7 +299,7 @@ def categorize():
     if not os.path.exists(directory_path) or not os.path.isdir(directory_path):
         return "Directory does not exist."
 
-    thread = threading.Thread(target=file_generator, args=(directory_path,))
+    thread = threading.Thread(target=file_generator, args=(directory_path,complex))
     thread.daemon = True
     thread.start()
 

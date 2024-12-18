@@ -54,6 +54,8 @@
     <form id="form" action="/api/categorize">
         <label for="dPath">Absolute path of the directory to crawl through:</label><br>
         <input type="text" id="dPath" name="dPath" value=""><br>
+        <label for="complex">Use multiple queries instead of one. Much slower, but better results!</label>
+        <input type="checkbox" id="complex" name="complex"><br>
         <button hx-post="/api/categorize" hx-trigger="click" hx-swap="beforeend" hx-target="#progress" id="sendbutton" hx-indicator="#spinner" autofocus>Look for images and categorize them</button>
     </form>
 </div>
