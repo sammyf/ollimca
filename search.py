@@ -4,10 +4,14 @@ from multiprocessing.dummy import current_process
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QTextEdit
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QSize, QRect
+from ollimca_core.query import Query
+from ollimca_core.config import Config
 import requests
 
 
 class MainWindow(QMainWindow):
+    chroma_path = ""
+    embedding_model = ""
     current_page = 1
     items_per_page = 12
     continuous_scroll = False
@@ -18,6 +22,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         global scroll_area
+
+        cfg = Config()
+        config = cfg.ReadConfig()
+        self.embedding_model = config.get("embedding_model")
+        self.chroma_path = config.get("chroma_path")
 
         self.setWindowTitle("Ollimca (OLLama IMage CAtegoriser)")
         self.setGeometry(100, 100, 800, 600)
@@ -78,27 +87,13 @@ class MainWindow(QMainWindow):
         self.row = 0
 
     def on_search_clicked(self):
+        query = Query(self.chroma_path, self.embedding_model)
+
         content = self.inputs["Content"].text()
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()
-
-        # Send HTTP POST request to the backend
-        url = "http://127.0.0.1:9706/api/query"
-        data = {
-            "content": content,
-            "mood": mood,
-            "color": color,
-            "page": self.current_page,
-            "items_per_page": self.items_per_page,
-        }
-        response = requests.post(url, json=data)
-
-        if response.status_code == 200:
-            image_paths = response.json()
-            self.display_images(image_paths)
-        else:
-            label = QLabel(f"Error: {response.status_code}")
-            self.grid_layout.addWidget(label, 0, 0)  # Add error message to the grid
+        image_paths = query.Query(content, mood, color, self.current_page, self.items_per_page)
+        self.display_images(image_paths)
 
     def display_images(self, image_paths):
         if self.continuous_scroll == False:
