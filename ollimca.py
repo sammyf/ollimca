@@ -4,6 +4,7 @@ import json
 from sqlite3 import sqlite_version
 from ollimca_core.query import Query
 from ollimca_core.config import Config
+from flask import Response
 
 import ollama
 from dotenv.cli import stream_file
@@ -252,7 +253,8 @@ def find_images():
     page = data.get('page')
     items_per_page = data.get('items_per_page')
     query = Query(chroma_path, embedding_model)
-    return query.Query(content, mood, colors, page, items_per_page)
+    return Response(query.Query(content, mood, colors, page, items_per_page), mimetype='application/json'), 200
+
 
 @app.route('/api/status', methods=['GET'])
 def status():

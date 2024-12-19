@@ -3,7 +3,6 @@ import json
 import chromadb
 import os
 import re
-from flask import jsonify
 
 
 class Query:
@@ -40,4 +39,5 @@ class Query:
                 documents = results["documents"][0]
             for document in documents:
                 images.append(document)
-        return jsonify(images), 200
+        return images
+

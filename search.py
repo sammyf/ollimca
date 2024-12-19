@@ -6,6 +6,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QSize, QRect
 from ollimca_core.query import Query
 from ollimca_core.config import Config
+import json
 import requests
 
 
