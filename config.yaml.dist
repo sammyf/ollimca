@@ -4,6 +4,7 @@
    port: "9706"
    vision_model: "moondream:latest"
    embedding_model: "nomic-embed-text:latest"
+   image_viewer: "NAME_OF_THE_PROGRAM_TO_OPEN_WHEN_CLICKED"
    temperature: 0
 
    db:

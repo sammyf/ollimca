@@ -1,19 +1,29 @@
 import sys
-from multiprocessing.dummy import current_process
 import os
-
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QTextEdit
+import threading
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt, QSize, QRect
+from PyQt6.QtCore import Qt, QSize,pyqtSignal
 from ollimca_core.query import Query
 from ollimca_core.config import Config
-import json
-import requests
+
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal(str)
+
+    def __init__(self, path, parent=None):
+        super().__init__(parent)
+        self.path = path  # Initialize the path attribute
+        self.setMouseTracking(True)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self.path)
 
 
 class MainWindow(QMainWindow):
     chroma_path = ""
     embedding_model = ""
+    image_viewer = None
 
     current_page = 1
     items_per_page = 12
@@ -30,6 +40,7 @@ class MainWindow(QMainWindow):
         config = cfg.ReadConfig()
         self.chroma_path = os.path.join("db", config['db']['chroma_path'])
         self.embedding_model = config["embedding_model"]
+        self.image_viewer = config["image_viewer"]
 
         self.setWindowTitle("Ollimca (OLLama IMage CAtegoriser)")
         self.setGeometry(100, 100, 800, 600)
@@ -112,7 +123,7 @@ class MainWindow(QMainWindow):
         self.grid_layout.setSpacing(0)
         self.ignore_signal=True
         for path in image_paths:
-            label = QLabel()
+            label = ClickableLabel(path)
             label.setFixedHeight(300)
             label.setFixedWidth(300)
             label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -123,6 +134,9 @@ class MainWindow(QMainWindow):
                 label.setFixedSize(QSize(300, 300))
             else:
                 label.setText("Image not found")
+
+            label.clicked.connect(lambda _, path=path: self.open_image(path))
+
             self.grid_layout.addWidget(label, self.row, self.col)
             # Move to the next column
             self.col += 1
@@ -138,6 +152,13 @@ class MainWindow(QMainWindow):
             self.current_page += 1
             self.continuous_scroll = True
             self.on_search_clicked()
+
+    def open_image(self, path):
+        def run_viewer():
+            os.system(f'{self.image_viewer} "{path}"')
+
+        thread = threading.Thread(target=run_viewer)
+        thread.start()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
