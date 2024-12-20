@@ -1,5 +1,6 @@
 import sys
 from multiprocessing.dummy import current_process
+import os
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QTextEdit
 from PyQt6.QtGui import QPixmap
@@ -27,7 +28,7 @@ class MainWindow(QMainWindow):
 
         cfg = Config()
         config = cfg.ReadConfig()
-        self.chroma_path = config["db"]["chroma_path"]
+        self.chroma_path = os.path.join("db", config['db']['chroma_path'])
         self.embedding_model = config["embedding_model"]
 
         self.setWindowTitle("Ollimca (OLLama IMage CAtegoriser)")

@@ -231,7 +231,7 @@ def file_generator(directory_path, complex):
         global processed_files
         thread_locked = True
         pattern = re.compile(r'.*.(jpg|jpeg|png)$', re.IGNORECASE)
-        #processed_files = fill_processed_files()
+        processed_files = fill_processed_files()
         try:
             for root, _, files in os.walk(directory_path):
                 for file in files:
@@ -266,7 +266,7 @@ def find_images():
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    return "\n ".join(processed_files)
+    return "\n ".join(processed_files[-50:])
 
 @app.route("/api/categorize", methods=['POST'])
 def categorize():
