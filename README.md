@@ -25,6 +25,7 @@ which makes it fail on some images.
 Do not forget to set an image viewer that should be started when an image is clicked.  (/usr/bin/gwenview if you are
 using KDE for example)
 
+### installation :
 
 Run ./start_server.sh to start the crawler webserver 
 Open http://localhost:9706  to open the crawler's page. Enter a directory with images in it, press
@@ -34,8 +35,11 @@ everything. Luckily you can stop the process anytime and continue later on.
 
 Also : please note that only jpg, jpeg and png files are looked at (the case is irrelevant, jpg and JPG work!)
 
-You can use the frontend ( started with python search.py if it didn't open automatically) to search the files that were 
-analyzed so far. The frontend is standalone.
+You can then use the frontend ( started with python search.py if it didn't open automatically) to search the files that were 
+analyzed so far. The frontend is standalone. Thankfully, the search itself is very fast. 
+It's important to understand that the search is only vector based for now, which means that
+queries are semantic and will ALWAYS return something, even if the terms you entered are not found 'literally'. Searching 
+for, for example, 'pinguin' will return pictures of pinguins, but also of other birds, the sea, possibly fish and ice too.
 
 This is a work in progress,so expect bugs, weird happenstances and missing features you just don't get why I didn't 
 implement them yet ... ¯\_(ツ)_/¯
