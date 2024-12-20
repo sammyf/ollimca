@@ -13,6 +13,7 @@ import requests
 class MainWindow(QMainWindow):
     chroma_path = ""
     embedding_model = ""
+
     current_page = 1
     items_per_page = 12
     continuous_scroll = False
@@ -26,8 +27,8 @@ class MainWindow(QMainWindow):
 
         cfg = Config()
         config = cfg.ReadConfig()
-        self.embedding_model = config.get("embedding_model")
-        self.chroma_path = config.get("chroma_path")
+        self.chroma_path = config["db"]["chroma_path"]
+        self.embedding_model = config["embedding_model"]
 
         self.setWindowTitle("Ollimca (OLLama IMage CAtegoriser)")
         self.setGeometry(100, 100, 800, 600)
