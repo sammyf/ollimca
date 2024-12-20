@@ -1,3 +1,7 @@
+   ollama_crawl: "http://127.0.0.1:11434"
+   ollama_query: "http://127.0.0.1:11434"
+   host: "127.0.0.1"
+   port: "9706"
    vision_model: "moondream:latest"
    embedding_model: "nomic-embed-text:latest"
    temperature: 0

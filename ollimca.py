@@ -6,7 +6,8 @@ from ollimca_core.query import Query
 from ollimca_core.config import Config
 from flask import Response
 
-import ollama
+from ollama import Client as OllamaClient
+
 from dotenv.cli import stream_file
 from flask import Flask, request, send_file, jsonify, render_template, send_from_directory
 from flask_cors import CORS
@@ -27,12 +28,18 @@ import stat
 app = Flask(__name__)
 CORS(app)
 
-global thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
+global ollama_client, ollama_embed_client, chroma_path, thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
 vision_model = "moondream:latest"
 embedding_model = "nomic-embed-text:latest"
 temperature = 1.31
+ollama_crawl = "127.0.0.1:11434"
+ollama_embed = "127.0.0.1:11434"
+host = "127.0.0.1"
+port = "9706"
 
+ollama_client = None
+ollama_embed_client = None
 chroma_path = os.path.join("db","ollimca_chroma.db")
 sqlite_path = os.path.join("db","ollimca_sqlite3.db")
 processed_files = []
@@ -117,7 +124,8 @@ def push_to_chroma(dbid, image_path, description):
         "color_scheme":description.overall_color_scheme
     }
     collection = chroma_client.get_or_create_collection('images')
-    response = ollama.embeddings(model=embedding_model, prompt=fulltext, keep_alive=-1, options={ temperature:0})
+
+    response = ollama_embed_client.embeddings(model=embedding_model, prompt=fulltext, keep_alive=-1, options={ temperature:0})
     embedding = response['embedding']
     collection.add(ids=str(dbid), embeddings=embedding, documents=str(image_path), metadatas=description_as_dict)
 
@@ -139,7 +147,7 @@ def get_creation_time(image_path):
         return f"Error: {e}"
 
 def complex_image_query(image_path):
-    response = ollama.chat (
+    response = ollama_client.chat (
         model=vision_model,
         messages=[
             {
@@ -159,7 +167,7 @@ def complex_image_query(image_path):
     return description
 
 def simple_image_query(image_path):
-    response = ollama.chat (
+    response = ollama_client.chat (
         model=vision_model,
         format=ImageDescription.model_json_schema(),  # Pass in the schema for the response
         messages=[
@@ -292,13 +300,27 @@ def index():
 if __name__ == "__main__":
     cfg = Config()
     config = cfg.ReadConfig()
-    vision_model = config.get("vision_model")
-    embedding_model = config.get("embedding_model")
-    temperature = config.get("temperature")
-    chroma_path = config.get("chroma_path")
-    sqlite_path = config.get("sqlite_path")
+    vision_model = config["vision_model"]
+    embedding_model = config["embedding_model"]
+    temperature = config["temperature"]
+
+    chroma_path = os.path.join("db", config['db']['chroma_path'])
+    sqlite_path = os.path.join("db", config['db']['sqlite_path'])
+
+    ollama_crawl = config["ollama_crawl"]
+    ollama_embed = config["ollama_embed"]
+    flask_host = config["host"]
+    flask_port = config["port"]
+
+    ollama_client = OllamaClient(
+        host=ollama_crawl
+    )
+
+    ollama_embed_client = OllamaClient(
+        host=ollama_embed
+    )
 
     chroma_client = chromadb.PersistentClient(chroma_path)
 
     setup_sqlite()
-    app.run(host="127.0.0.1", port="9706")
+    app.run(flask_host, flask_port)

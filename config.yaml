@@ -1,7 +1,0 @@
-   vision_model: "moondream:latest"
-   embedding_model: "nomic-embed-text:latest"
-   temperature: 1.31
-
-   db:
-     chroma_path: "ollimca_chroma.db"
-     sqlite_path: "ollimca_sqlite3.db"
