@@ -16,11 +16,15 @@ On Linux:
 Run ./install.sh
 
 update config.yaml with the relevant data. The chromadb and sqlite paths are just the name of the files created. 
-They will be located in the 'db' directory.
+They will be located in the 'db' directory. 
 
 The default models should work even for people without GPU, but it will
 still be slow. Also : while moondream is a great and very small vision model *most of the time*, it has a small bug 
 which makes it fail on some images.
+
+Do not forget to set an image viewer that should be started when an image is clicked.  (/usr/bin/gwenview if you are
+using KDE for example)
+
 
 Run ./start_server.sh to start the crawler webserver 
 Open http://localhost:9706  to open the crawler's page. Enter a directory with images in it, press
