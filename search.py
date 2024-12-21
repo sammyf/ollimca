@@ -126,6 +126,8 @@ class MainWindow(QMainWindow):
         self.grid_layout.setSpacing(0)
         self.ignore_signal=True
         for path in image_paths:
+            if not os.path.exists(path):
+                continue
             label = ClickableLabel(path)
             label.setFixedHeight(300)
             label.setFixedWidth(300)
@@ -147,6 +149,9 @@ class MainWindow(QMainWindow):
             if self.col >= 3:  # Assuming 3 columns per row
                 self.col = 0
                 self.row += 1
+        if self.grid_layout.count() < self.items_per_page:
+            self.continuous_scroll = True
+            self.on_search_clicked()
         self.ignore_signal=False
 
     def on_scroll_value_changed(self, value):

@@ -25,7 +25,7 @@ which makes it fail on some images.
 Do not forget to set an image viewer that should be started when an image is clicked.  (/usr/bin/gwenview if you are
 using KDE for example)
 
-### installation :
+### useage :
 
 Run ./start_server.sh to start the crawler webserver 
 Open http://localhost:9706  to open the crawler's page. Enter a directory with images in it, press
@@ -37,9 +37,18 @@ Also : please note that only jpg, jpeg and png files are looked at (the case is 
 
 You can then use the frontend ( started with python search.py if it didn't open automatically) to search the files that were 
 analyzed so far. The frontend is standalone. Thankfully, the search itself is very fast. 
-It's important to understand that the search is only vector based for now, which means that
-queries are semantic and will ALWAYS return something, even if the terms you entered are not found 'literally'. Searching 
-for, for example, 'pinguin' will return pictures of pinguins, but also of other birds, the sea, possibly fish and ice too.
+
+### notes about the results :
+
+The keywords are first searched in the content text and the path of each image, and then semantically in a vector database, 
+which means that will ALWAYS return something, even if the terms you entered are not found 'literally'. Searching 
+for, for example, 'pinguin' will return pictures of pinguins, but also of other birds, the sea, possibly fish and ice too, 
+with decreasing probability that the image is relevant the longer you scroll down.
+
+Also : the way LLMs work mean that the description may or may not be accurate. Sometimes (often?) you will be wondering why
+a certain image appears on a certain keyword. This is, if not intended, at least a useful 'bug', as it makes you rediscover 
+photos you didn't even know you had and let you relive old memories you had forgotten ... at least it did for me.
+
 
 This is a work in progress,so expect bugs, weird happenstances and missing features you just don't get why I didn't 
 implement them yet ... ¯\_(ツ)_/¯

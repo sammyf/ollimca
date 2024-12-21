@@ -27,7 +27,7 @@ class Query:
         rs=[]
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT path FROM images WHERE content LIKE ? LIMIT ?, ?', ('%' + content + '%', page*items_per_page, items_per_page))
+        cursor.execute('SELECT path FROM images WHERE content LIKE ? OR path LIKE ? LIMIT ?, ?', ('%' + content + '%', '%' + content + '%', page*items_per_page, items_per_page))
         paths = cursor.fetchall()
         rs = [row[0] for row in paths]
         conn.close()
