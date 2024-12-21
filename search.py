@@ -22,10 +22,12 @@ class ClickableLabel(QLabel):
 
 class MainWindow(QMainWindow):
     chroma_path = ""
+    sqlite_path = ""
     embedding_model = ""
     image_viewer = None
 
-    current_page = 1
+    current_page_sql = 1
+    current_page_chroma = 1
     items_per_page = 12
     continuous_scroll = False
     do_not_scroll = False
@@ -39,6 +41,7 @@ class MainWindow(QMainWindow):
         cfg = Config()
         config = cfg.ReadConfig()
         self.chroma_path = os.path.join("db", config['db']['chroma_path'])
+        self.sqlite_path = os.path.join("db", config['db']['sqlite_path'])
         self.embedding_model = config["embedding_model"]
         self.image_viewer = config["image_viewer"]
 
@@ -94,19 +97,19 @@ class MainWindow(QMainWindow):
         scroll_area.verticalScrollBar().valueChanged.connect(self.on_scroll_value_changed)
 
     def on_search_changed(self):
-        self.current_page = 1
         self.continuous_scroll = False
-        self.current_page = 1
+        self.current_page_sql = 1
+        self.current_page_chroma = 1
         self.col = 0
         self.row = 0
 
     def on_search_clicked(self):
-        query = Query(self.chroma_path, self.embedding_model)
+        query = Query( self.sqlite_path,self.chroma_path, self.embedding_model)
 
         content = self.inputs["Content"].text()
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()
-        image_paths = query.Query(content, mood, color, self.current_page, self.items_per_page)
+        (image_paths, self.current_page_sql, self.current_page_chroma) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page)
         self.display_images(image_paths)
 
     def display_images(self, image_paths):
@@ -149,7 +152,7 @@ class MainWindow(QMainWindow):
     def on_scroll_value_changed(self, value):
         scrollbar = scroll_area.verticalScrollBar()
         if value == scrollbar.maximum() and self.ignore_signal == False:
-            self.current_page += 1
+            #self.current_page += 1
             self.continuous_scroll = True
             self.on_search_clicked()
 

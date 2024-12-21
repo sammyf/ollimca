@@ -112,8 +112,9 @@ def fill_processed_files():
     cursor = conn.cursor()
     cursor.execute('SELECT path FROM images')
     paths = cursor.fetchall()
-    return [row[0] for row in paths]
+    rs = [row[0] for row in paths]
     conn.close()
+    return rs
 
 def push_to_chroma(dbid, image_path, description):
     fulltext="description: "+description.description+"\nmood: "+description.mood+"\ncolor_scheme: "+description.overall_color_scheme
@@ -260,8 +261,9 @@ def find_images():
     colors = data.get('color')
     page = data.get('page')
     items_per_page = data.get('items_per_page')
-    query = Query(chroma_path, embedding_model)
-    return Response(query.Query(content, mood, colors, page, items_per_page), mimetype='application/json'), 200
+    query = Query(sqlite_path, chroma_path, embedding_model)
+    (images, page_sql, page_chroma) = query.Query(content, mood, colors, page, page, items_per_page)
+    return Response(images, mimetype='application/json'), 200
 
 
 @app.route('/api/status', methods=['GET'])
