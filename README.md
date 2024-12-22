@@ -25,7 +25,7 @@ which makes it fail on some images.
 Do not forget to set an image viewer that should be started when an image is clicked.  (/usr/bin/gwenview if you are
 using KDE for example)
 
-### useage :
+### usage :
 
 Run ./start_server.sh to start the crawler webserver 
 Open http://localhost:9706  to open the crawler's page. Enter a directory with images in it, press
