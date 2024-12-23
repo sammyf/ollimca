@@ -36,11 +36,11 @@ class Query:
     def query_chroma(self, content, mood, colors, page, items_per_page):
         search_query = ""
         if content.strip() != "":
-            search_query += "description:" + content
+            search_query += "description:\"\"" + content+"\"\""
         if mood.strip() != "":
-            search_query += "\nmood: " + mood
+            search_query += "\nmood:\"\"" + mood+"\"\""
         if colors.strip() != "":
-            search_query += "\noverall_color_scheme: " + colors
+            search_query += "\noverall_color_scheme:\"\"" + colors+"\"\""
 
         response = ollama.embeddings(
             prompt=search_query,
