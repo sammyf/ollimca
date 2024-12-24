@@ -91,6 +91,7 @@ class Query:
                 if os.path.exists(base_dir) and os.access(base_dir, os.R_OK):
                     self.remove_image(image_id)
                     if os.path.join(image_path):
+                        print(f"removing {{image_path}}")
                         os.remove(image_path)
                         return True
             else:
@@ -101,7 +102,7 @@ class Query:
     def remove_image(self,image_id):
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM images WHERE id = ?', (id))
+        cursor.execute('DELETE FROM images WHERE id = ?', (image_id))
         conn.commit()
         conn.close()
 
