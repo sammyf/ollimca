@@ -17,8 +17,9 @@ class Query:
         self.sha256_hash = hashlib.sha256()
         self.delete_duplicate_missing = False
 
-    def query(self, content, mood, colors, page_sql, page_chroma, items_per_page, already_shown_images, delete_duplicates_missing):
+    def query(self, content, mood, colors, page_sql, page_chroma, items_per_page, already_shown_images, checksums, delete_duplicates_missing):
         images=[]
+        self.checksums = checksums
         self.already_shown_images = already_shown_images
         self.delete_duplicate_missing = delete_duplicates_missing
         if content.strip() != '':
@@ -28,7 +29,7 @@ class Query:
             chroma_rs=self.query_chroma(content, mood, colors, page_chroma, items_per_page)
             images.extend(chroma_rs)
             page_chroma += 1
-        return (images, page_sql, page_chroma,self.already_shown_images)
+        return (images, page_sql, page_chroma,self.already_shown_images, self.checksums)
 
     def query_sqlite(self, content, page, items_per_page):
         rs=[]
@@ -86,14 +87,12 @@ class Query:
     def check_duplicate(self,image_path, image_id):
         if self.delete_duplicate_missing:
             checksum = self.get_sha256_checksum(image_path)
-            if checksum == "..." or checksum in self.checksums:
-                base_dir = os.path.dirname(image_path)
-                if os.path.exists(base_dir) and os.access(base_dir, os.R_OK):
+            if (checksum == "...") or (checksum in self.checksums):
+                if os.path.exists(image_path):
+                    print(f"removing {image_path}")
                     self.remove_image(image_id)
-                    if os.path.join(image_path):
-                        print(f"removing {{image_path}}")
-                        os.remove(image_path)
-                        return True
+                    # os.remove(image_path)
+                return True
             else:
                 self.checksums.append(checksum)
         return False
@@ -102,7 +101,7 @@ class Query:
     def remove_image(self,image_id):
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM images WHERE id = ?', (image_id))
+        cursor.execute('DELETE FROM images WHERE id = ?', (image_id,))
         conn.commit()
         conn.close()
 

@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
     image_viewer = None
 
     already_shown_images = []
+    checksums = []
     delete_duplicates_missing = False
     current_page_sql = 1
     current_page_chroma = 1
@@ -113,6 +114,7 @@ class MainWindow(QMainWindow):
         self.col = 0
         self.row = 0
         self.already_shown_images = []
+        self.checksums = []
 
     def on_search_clicked(self):
         query = Query( self.sqlite_path,self.chroma_path, self.embedding_model)
@@ -121,7 +123,7 @@ class MainWindow(QMainWindow):
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()
 
-        (image_paths, self.current_page_sql, self.current_page_chroma, self.already_shown_images) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.delete_duplicates_missing)
+        (image_paths, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing)
         self.display_images(image_paths)
 
     def display_images(self, image_paths):

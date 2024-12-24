@@ -46,9 +46,10 @@ analyzed so far. The frontend is standalone. Thankfully, the search itself is ve
 ### notes :
 #### about *delete and remove duplicates*:
 This option will slow down search queries. Checksums for each image that is supposed to be displayed is computed on the fly
-and that can take some time. Also, note that only missing files whose base directory is accessible will be removed from the 
-databases. This is needed if you have a database shared with other users but have also indexed images that other users can't
-access (/home/yourname/Pictures/ for example)
+and that can take some time. No image will be deleted physically for now, as I don't want this on without further testing!
+You can reenable that function if you want : just uncomment the line `os.remove(image_path)` in the function `check_duplicate()`
+in `query.py`. In my only test run the programm deleted a bunch of images and I'm not sure it was right (yet), so if you
+reenable it, it's at your own risks and peril!
 
 #### about *queries*:
 The keywords are first searched in the content text and the path of each image, and then semantically in a vector database, 
