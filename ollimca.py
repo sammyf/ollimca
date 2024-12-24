@@ -262,7 +262,7 @@ def find_images():
     page = data.get('page')
     items_per_page = data.get('items_per_page')
     query = Query(sqlite_path, chroma_path, embedding_model)
-    (images, page_sql, page_chroma) = query.Query(content, mood, colors, page, page, items_per_page)
+    (images, page_sql, page_chroma, _) = query.Query(content, mood, colors, page, page, items_per_page, [], False)
     return Response(images, mimetype='application/json'), 200
 
 

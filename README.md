@@ -8,6 +8,11 @@ The LLM then writes a description of the image which is stored in a database.
 
 You can then use the provided stand-alone frontend to search for images featuring the keywords you enter.
 
+### changelog :
+
+* added a checkbox in the search frontend to physically delete duplicate images (based on their checksum) and then
+remove missing files from the databases. (please see the notes!)
+
 ### installation :
 
 You will need python3 with venv installed. 
@@ -38,8 +43,14 @@ Also : please note that only jpg, jpeg and png files are looked at (the case is 
 You can then use the frontend ( started with python search.py if it didn't open automatically) to search the files that were 
 analyzed so far. The frontend is standalone. Thankfully, the search itself is very fast. 
 
-### notes about the results :
+### notes :
+#### about *delete and remove duplicates*:
+This option will slow down search queries. Checksums for each image that is supposed to be displayed is computed on the fly
+and that can take some time. Also, note that only missing files whose base directory is accessible will be removed from the 
+databases. This is needed if you have a database shared with other users but have also indexed images that other users can't
+access (/home/yourname/Pictures/ for example)
 
+#### about *queries*:
 The keywords are first searched in the content text and the path of each image, and then semantically in a vector database, 
 which means that will ALWAYS return something, even if the terms you entered are not found 'literally'. Searching 
 for, for example, 'pinguin' will return pictures of pinguins, but also of other birds, the sea, possibly fish and ice too, 
@@ -49,6 +60,9 @@ Also : the way LLMs work mean that the description may or may not be accurate. S
 a certain image appears on a certain keyword. This is, if not intended, at least a useful 'bug', as it makes you rediscover 
 photos you didn't even know you had and let you relive old memories you had forgotten ... at least it did for me.
 
+#### about *images*:
+Images that are too big will not get a thumbnail, and will instead displayed as a 'image not available' textfield. You can 
+still click to open them in your external viewe.
 
 This is a work in progress,so expect bugs, weird happenstances and missing features you just don't get why I didn't 
 implement them yet ... ¯\_(ツ)_/¯

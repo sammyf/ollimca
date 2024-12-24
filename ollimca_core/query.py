@@ -4,6 +4,7 @@ import chromadb
 import os
 import re
 import sqlite3
+import hashlib
 
 class Query:
     def __init__(self, sqlite_path, chroma_path, embedding_model):
@@ -11,9 +12,15 @@ class Query:
         self.sqlite_path = sqlite_path
         self.embedding_model = embedding_model
         self.chroma_client = chromadb.PersistentClient(chroma_path)
+        self.already_shown_images=[]
+        self.checksums=[]
+        self.sha256_hash = hashlib.sha256()
+        self.delete_duplicate_missing = False
 
-    def query(self, content, mood, colors, page_sql, page_chroma, items_per_page):
+    def query(self, content, mood, colors, page_sql, page_chroma, items_per_page, already_shown_images, delete_duplicates_missing):
         images=[]
+        self.already_shown_images = already_shown_images
+        self.delete_duplicate_missing = delete_duplicates_missing
         if content.strip() != '':
             images = self.query_sqlite(content, page_sql, items_per_page)
             page_sql +=1
@@ -21,26 +28,33 @@ class Query:
             chroma_rs=self.query_chroma(content, mood, colors, page_chroma, items_per_page)
             images.extend(chroma_rs)
             page_chroma += 1
-        return (images, page_sql, page_chroma)
+        return (images, page_sql, page_chroma,self.already_shown_images)
 
     def query_sqlite(self, content, page, items_per_page):
         rs=[]
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT path FROM images WHERE content LIKE ? OR path LIKE ? LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page))
+        cursor.execute('SELECT id, path FROM images WHERE content LIKE ? OR path LIKE ? ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page))
         paths = cursor.fetchall()
-        rs = [row[0] for row in paths]
+        rs = []
+        for row in paths:
+            if self.check_duplicate(row[1], row[0]):
+                continue
+            if row[1] in self.already_shown_images:
+                continue
+            self.already_shown_images.append(row[1])
+            rs.append(row[1])
         conn.close()
         return rs
 
     def query_chroma(self, content, mood, colors, page, items_per_page):
         search_query = ""
         if content.strip() != "":
-            search_query += "description:\"\"" + content+"\"\""
+            search_query += "\"\"an image showing " + content+"\"\""
         if mood.strip() != "":
-            search_query += "\nmood:\"\"" + mood+"\"\""
+            search_query += "\n\"\"the overall mood conveyed by the image is " + mood+"\"\""
         if colors.strip() != "":
-            search_query += "\noverall_color_scheme:\"\"" + colors+"\"\""
+            search_query += "\n\"\"the overall color scheme of this image is " + colors+"\"\""
 
         response = ollama.embeddings(
             prompt=search_query,
@@ -54,12 +68,53 @@ class Query:
         )
         images = []
         if len(results) > 0:
-            cutoff = items_per_page * (page - 1)
-            if cutoff > 0:
-                documents = results["documents"][0][cutoff:]
-            else:
-                documents = results["documents"][0]
-            for document in documents:
+            selected_images = 0
+            documents = results["documents"][0]
+            ids = results["ids"][0]
+            for document, image_id in zip(documents, ids):
+                if self.check_duplicate(document, image_id):
+                    continue
+                if document in self.already_shown_images:
+                    continue
+                self.already_shown_images.append(document)
                 images.append(document)
+                selected_images += 1
+                if selected_images >= items_per_page:
+                    break
         return images
 
+    def check_duplicate(self,image_path, image_id):
+        if self.delete_duplicate_missing:
+            checksum = self.get_sha256_checksum(image_path)
+            if checksum == "..." or checksum in self.checksums:
+                base_dir = os.path.dirname(image_path)
+                if os.path.exists(base_dir) and os.access(base_dir, os.R_OK):
+                    self.remove_image(image_id)
+                    if os.path.join(image_path):
+                        os.remove(image_path)
+                        return True
+            else:
+                self.checksums.append(checksum)
+        return False
+
+
+    def remove_image(self,image_id):
+        conn = sqlite3.connect(self.sqlite_path)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM images WHERE id = ?', (id))
+        conn.commit()
+        conn.close()
+
+        collection = self.chroma_client.get_or_create_collection(name='images')
+        entry_id = str(image_id)
+        collection.delete(ids=[entry_id])
+
+    def get_sha256_checksum(self, file_path):
+
+        try:
+            with open(file_path, "rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    self.sha256_hash.update(byte_block)
+            return self.sha256_hash.hexdigest()
+        except:
+            return "..."
