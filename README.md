@@ -13,6 +13,17 @@ You can then use the provided stand-alone frontend to search for images featurin
 * added a checkbox in the search frontend to physically delete duplicate images (based on their checksum) and then
 remove missing files from the databases. (please see the notes!)
 
+### requirements : 
+* python3.x 
+
+* For catalogizing and taggingphotos:
+  * a PC running Windows or (better) Linux with a GPU supported by ollama, or an M series Apple Mac (slower than 
+  a GPU in many cases, but still much better than none)
+  
+* For querying the databases: 
+  * basically any computer that can run ollama and python, even on the CPU and has at least 8GB RAM (it might still 
+  work with 4GB, but I can't test it) I run the embedding on an raspberry pi 5/8GB and it's still fast enough.
+  
 ### installation :
 
 You will need python3 with venv installed. 
