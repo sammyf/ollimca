@@ -22,7 +22,8 @@ remove missing files from the databases. (please see the notes!)
   
 * For querying the databases: 
   * basically any computer that can run ollama and python, even on the CPU and has at least 8GB RAM (it might still 
-  work with 4GB, but I can't test it) I run the embedding on an raspberry pi 5/8GB and it's still fast enough.
+  work with 4GB, but I can't test it) I run the embedding on an raspberry pi 5/8GB and it's still fast enough, once the 
+  initial model-loading is done.
   
 ### installation :
 
