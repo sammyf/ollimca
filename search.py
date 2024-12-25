@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
     sqlite_path = ""
     embedding_model = ""
     image_viewer = None
+    ollama_emnbed=None
 
     already_shown_images = []
     checksums = []
@@ -47,7 +48,7 @@ class MainWindow(QMainWindow):
         self.sqlite_path = os.path.join("db", config['db']['sqlite_path'])
         self.embedding_model = config["embedding_model"]
         self.image_viewer = config["image_viewer"]
-
+        self.ollama_embed = config["ollama_embed"]
         self.setWindowTitle("Ollimca (OLLama IMage CAtegoriser)")
         self.setGeometry(100, 100, 800, 600)
 
@@ -117,8 +118,7 @@ class MainWindow(QMainWindow):
         self.checksums = []
 
     def on_search_clicked(self):
-        query = Query( self.sqlite_path,self.chroma_path, self.embedding_model)
-
+        query = Query( self.sqlite_path,self.chroma_path, self.embedding_model, self.ollama_embed)
         content = self.inputs["Content"].text()
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()

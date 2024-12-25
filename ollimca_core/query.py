@@ -1,4 +1,4 @@
-import ollama
+from ollama import Client as OllamaClient
 import json
 import chromadb
 import os
@@ -7,7 +7,7 @@ import sqlite3
 import hashlib
 
 class Query:
-    def __init__(self, sqlite_path, chroma_path, embedding_model):
+    def __init__(self, sqlite_path, chroma_path, embedding_model, ollama_embed):
         self.chroma_path = chroma_path
         self.sqlite_path = sqlite_path
         self.embedding_model = embedding_model
@@ -16,6 +16,9 @@ class Query:
         self.checksums=[]
         self.sha256_hash = hashlib.sha256()
         self.delete_duplicate_missing = False
+        self.ollama_embed_client = OllamaClient(
+            host=ollama_embed
+        )
 
     def query(self, content, mood, colors, page_sql, page_chroma, items_per_page, already_shown_images, checksums, delete_duplicates_missing):
         images=[]
@@ -57,7 +60,7 @@ class Query:
         if colors.strip() != "":
             search_query += "\n\"\"the overall color scheme of this image is " + colors+"\"\""
 
-        response = ollama.embeddings(
+        response = self.ollama_embed_client.embeddings(
             prompt=search_query,
             model=self.embedding_model,
             keep_alive=-1
@@ -91,7 +94,7 @@ class Query:
                 if os.path.exists(image_path):
                     print(f"removing {image_path}")
                     self.remove_image(image_id)
-                    # os.remove(image_path)
+                    # ²
                 return True
             else:
                 self.checksums.append(checksum)
