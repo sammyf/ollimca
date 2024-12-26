@@ -1,4 +1,4 @@
-# OLLIMCA (OLLama IMage CAtaloguiser)
+# OLLIMCA (OLLama IMage CAtaloguing)
 
 (Licensed under GPLv3. See the LICENSE file for details.)
 
