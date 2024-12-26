@@ -1,24 +1,34 @@
 import sys
 import os
 import threading
-from PyQt6.QtWidgets import QApplication, QCheckBox, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QApplication, QToolTip, QCheckBox, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton
+from PyQt6.QtGui import QPixmap, QIcon, QCursor
 from PyQt6.QtCore import Qt, QSize,pyqtSignal
 from ollimca_core.query import Query
 from ollimca_core.config import Config
 
 class ClickableLabel(QLabel):
     clicked = pyqtSignal(str)
-
+    popup = ""
     def __init__(self, path, parent=None):
         super().__init__(parent)
         self.path = path  # Initialize the path attribute
+        self.popup = self.path
         self.setMouseTracking(True)
+        self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(self.path)
 
+    # def enterEvent(self, event):
+    #     QToolTip.showText(event.globalPosition().toPoint(), f"{self.popup}", self)
+    #
+    # def mouseMoveEvent(self, event):
+    #     QToolTip.showText(event.globalPosition().toPoint(), f"{self.popup}", self)
+    #
+    # def leaveEvent(self, event):
+    #     QToolTip.hideText()
 
 class MainWindow(QMainWindow):
     chroma_path = ""
@@ -184,6 +194,8 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    icon = QIcon("icon.png")  # Replace with your icon file path
+    app.setWindowIcon(icon)
     window = MainWindow()
     window.show()
 
