@@ -15,15 +15,21 @@ remove missing files from the databases. (please see the notes!)
 
 ### requirements : 
 * python3.x 
+* ollama (https://ollama.com)
+* to query the database : `nomic-embed-text` or another embedding model installed. (install with `ollama pull nomic-embed-text`) 
+* to analyse the images : a vision model from the ollama library (moondream, llama3.2-vision, llava, bakllava, ...)
 
-* For catalogizing and taggingphotos:
-  * a PC running Windows or (better) Linux with a GPU supported by ollama, or an M series Apple Mac (slower than 
-  a GPU in many cases, but still much better than none)
+*a note about a requirements*: analysing the images is a lengthy process that taxes your processor (GPU or CPU) quite a
+  bit. A PC running Windows or (better) Linux with a GPU supported by ollama, or an M series Apple Mac (slower than 
+  a GPU in many cases, but still *much* better than just a standard CPU) is highly recommended
   
-* For querying the databases: 
-  * basically any computer that can run ollama and python, even on the CPU and has at least 8GB RAM (it might still 
-  work with 4GB, but I can't test it) I run the embedding on an raspberry pi 5/8GB and it's still fast enough, once the 
-  initial model-loading is done.
+Querying the databases, on the other hand, is fast and doesn't take much power. Basically any computer that can run 
+ollama and python, even on the CPU and has at least 8GB RAM (it might still work with 4GB, but I can't test it) should be 
+enough. I run the embedding for the queries on a raspberry pi 5/8GB and, apart from the initial delay when the embedding
+model is loaded, queries take less than a second to return results. 
+
+This means that if you put your images and the database folder on a shared directory, you can use your most powerful 
+system to analyze all the images, and let every computer that can run the frontend do queries! 
   
 ### installation :
 
