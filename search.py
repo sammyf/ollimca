@@ -2,20 +2,29 @@ import sys
 import os
 import threading
 from PyQt6.QtWidgets import QApplication, QToolTip, QCheckBox, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton
-from PyQt6.QtGui import QPixmap, QIcon, QCursor
+from PyQt6.QtGui import QPixmap, QIcon, QCursor, QContextMenuEvent
 from PyQt6.QtCore import Qt, QSize,pyqtSignal
 from ollimca_core.query import Query
 from ollimca_core.config import Config
+import textwrap
+
+
+def wrap_text(text, max_width=80):
+    lines = text.split('\n')
+    wrapped_lines = [textwrap.fill(line, width=max_width) for line in lines]
+    return '\n'.join(wrapped_lines)
+
 
 class ClickableLabel(QLabel):
     clicked = pyqtSignal(str)
     popup = ""
-    def __init__(self, path, parent=None):
+    def __init__(self, path, description, parent=None):
         super().__init__(parent)
         self.path = path  # Initialize the path attribute
         self.popup = self.path
         self.setMouseTracking(True)
         self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        self.description = description
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -24,11 +33,14 @@ class ClickableLabel(QLabel):
     # def enterEvent(self, event):
     #     QToolTip.showText(event.globalPosition().toPoint(), f"{self.popup}", self)
     #
-    # def mouseMoveEvent(self, event):
-    #     QToolTip.showText(event.globalPosition().toPoint(), f"{self.popup}", self)
-    #
-    # def leaveEvent(self, event):
-    #     QToolTip.hideText()
+    def contextMenuEvent(self, event):
+        if QToolTip.isVisible():
+            QToolTip.hideText()
+        else:
+            QToolTip.showText(event.globalPos(), f"{self.description}", self)
+
+    def leaveEvent(self, event):
+        QToolTip.hideText()
 
 class MainWindow(QMainWindow):
     chroma_path = ""
@@ -133,10 +145,10 @@ class MainWindow(QMainWindow):
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()
 
-        (image_paths, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing)
-        self.display_images(image_paths)
+        (image_details, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing)
+        self.display_images(image_details)
 
-    def display_images(self, image_paths):
+    def display_images(self, image_details):
         if self.continuous_scroll == False:
             # Clear previous results
             for i in reversed(range(self.grid_layout.count())):
@@ -149,10 +161,12 @@ class MainWindow(QMainWindow):
         # Display new images
         self.grid_layout.setSpacing(0)
         self.ignore_signal=True
-        for img_path in image_paths:
+        for img_detail in image_details:
+            img_path = img_detail[0]
+            img_detail = img_detail[1]
             if not os.path.exists(img_path):
                 continue
-            label = ClickableLabel(img_path)
+            label = ClickableLabel(img_path, wrap_text(img_detail))
             label.setFixedHeight(300)
             label.setFixedWidth(300)
             label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)

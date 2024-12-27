@@ -38,7 +38,7 @@ class Query:
         rs=[]
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT id, path FROM images WHERE content LIKE ? OR path LIKE ? ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page))
+        cursor.execute('SELECT id, path, content FROM images WHERE content LIKE ? OR path LIKE ? ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page))
         paths = cursor.fetchall()
         rs = []
         for row in paths:
@@ -47,7 +47,7 @@ class Query:
             if row[1] in self.already_shown_images:
                 continue
             self.already_shown_images.append(row[1])
-            rs.append(row[1])
+            rs.append([row[1],row[2]])
         conn.close()
         return rs
 
@@ -75,13 +75,14 @@ class Query:
             selected_images = 0
             documents = results["documents"][0]
             ids = results["ids"][0]
-            for document, image_id in zip(documents, ids):
+            content = results["metadatas"][0]
+            for document, image_id, meta in zip(documents, ids, content):
                 if self.check_duplicate(document, image_id):
                     continue
                 if document in self.already_shown_images:
                     continue
                 self.already_shown_images.append(document)
-                images.append(document)
+                images.append([document,meta["description"]])
                 selected_images += 1
                 if selected_images >= items_per_page:
                     break
