@@ -21,6 +21,9 @@ remove missing files from the databases. (please see the notes!)
 * ollama (https://ollama.com)
 * to query the database : `nomic-embed-text` or another embedding model installed. (install with `ollama pull nomic-embed-text`) 
 * to analyse the images : a vision model from the ollama library (moondream, llama3.2-vision, llava, bakllava, ...)
+* for face recognition, make sure the models are installed with :` pip install git+https://github.com/ageitgey/face_recognition_models`
+ and update your setup tools with 'pip install --upgrade setuptools'
+
 
 *a note about a requirements*: analysing the images is a lengthy process that taxes your processor (GPU or CPU) quite a
   bit. A PC running Windows or (better) Linux with a GPU supported by ollama, or an M series Apple Mac (slower than 

@@ -8,3 +8,4 @@ pillow
 PyQt6
 pyyaml
 face-recognition
+git+https://github.com/ageitgey/face_recognition_models
