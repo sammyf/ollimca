@@ -71,29 +71,32 @@ class TagFaces:
         rs = []
         for row in rows:
             print(f"processing {row[1]}:")
-            # Load image and detect faces
-            #img = face_recognition.load_image_file(row[1],scale=True)
-            img = scale_image(row[1])
-            face_locations = face_recognition.face_locations(img)
-            if len(face_locations) == 0:
-                print(f"no face found in {row[1]}")
-                continue
+            try:
+                    # Load image and detect faces
+                    #img = face_recognition.load_image_file(row[1],scale=True)
+                    img = scale_image(row[1])
+                    face_locations = face_recognition.face_locations(img)
+                    if len(face_locations) == 0:
+                        print(f"no face found in {row[1]}")
+                        continue
 
-            # Verify face identity
-            recognized_faces = ";".split(row[2])
-            for face in self.known_faces:
-                if face[0] in recognized_faces:
-                    continue
-                # print(f"\tcomparing to {face[1]}")
-                rs=self.test(img,face[2])
-                if rs:
-                    recognized_faces.append(face[0])
-                    print(f"Faces match: {face[1]} is in {row[1]}!")
+                    # Verify face identity
+                    recognized_faces = ";".split(row[2])
+                    for face in self.known_faces:
+                        if face[0] in recognized_faces:
+                            continue
+                        # print(f"\tcomparing to {face[1]}")
+                        rs=self.test(img,face[2])
+                        if rs:
+                            recognized_faces.append(face[0])
+                            print(f"Faces match: {face[1]} is in {row[1]}!")
 
-            if len(recognized_faces) > 0:
-                cursor = conn.cursor()
-                cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'.join(recognized_faces),row[0],))
-                cursor.close()
+                    if len(recognized_faces) > 0:
+                        cursor = conn.cursor()
+                        cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'.join(recognized_faces),row[0],))
+                        cursor.close()
+            except:
+                print(row[1]+" could not be recognized")
         conn.close()
 
 
