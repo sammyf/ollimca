@@ -92,7 +92,7 @@ class TagFaces:
 
             if len(recognized_faces) > 0:
                 cursor = conn.cursor()
-                cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'.recognized_faces,row[0],))
+                cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'.join(recognized_faces),row[0],))
                 cursor.close()
         conn.close()
 
