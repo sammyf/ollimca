@@ -35,7 +35,6 @@ class Query:
         return (images, page_sql, page_chroma,self.already_shown_images, self.checksums)
 
     def query_sqlite(self, content, page, items_per_page):
-        rs=[]
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
         cursor.execute('SELECT id, path, content FROM images WHERE content LIKE ? OR path LIKE ? ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page))
