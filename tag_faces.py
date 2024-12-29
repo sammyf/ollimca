@@ -9,32 +9,26 @@ import os
 import glob
 from PIL import Image
 import numpy as np
-
-
-def scale_image(input_path, max_size=2000):
-    # Open an image file
-    with Image.open(input_path) as img:
-        # Get original dimensions
-        width, height = img.size
-
-        # Calculate the scaling factor
-        if width > height:
-            scale_factor = max_size / width
-        else:
-            scale_factor = max_size / height
-
-        # Calculate new dimensions
-        new_width = int(width * scale_factor)
-        new_height = int(height * scale_factor)
-
-        # Resize the image
-        resized_img = img.resize((new_width, new_height))
-        return np.array(resized_img)
+import torch
+from facenet_pytorch import InceptionResnetV1
+from torchvision import transforms
+from dlib import get_frontal_face_detector, shape_predictor
 
 
 class TagFaces:
     known_faces = []
     def __init__(self):
+        self.model = InceptionResnetV1(pretrained='vggface2').eval()
+        # Define a transformation to prepare images for the model
+        self.transform = transforms.Compose([
+            transforms.Resize((160, 160)),
+            transforms.ToTensor()
+        ])
+
+        self.detector = get_frontal_face_detector()
+        self.predictor = shape_predictor("shape_predictor_68_face_landmarks.dat")
+        self.threshold = 0.4
+
         cfg = Config()
         config = cfg.ReadConfig()
         self.sqlite_path = os.path.join("db", config['db']['sqlite_path'])
@@ -42,8 +36,7 @@ class TagFaces:
         for face in known_faces_path:
             callname = os.path.basename(face).replace('.jpg','')
             id = self.find_or_create_id(face)
-            img = face_recognition.load_image_file(face)
-            self.known_faces.append([str(id), callname,face_recognition.face_encodings(img, model="cnn")[0]])
+            self.known_faces.append([str(id), callname,self.get_face_embedding(face)])
 
     def find_or_create_id(self, callname):
         conn = sqlite3.connect(self.sqlite_path)
@@ -57,7 +50,7 @@ class TagFaces:
             cursor = conn.cursor()
             cursor.execute('INSERT INTO persons (callname) VALUES (?)',(callname,))
             id = cursor.lastrowid
-
+        conn.commit()
         conn.close()
         return id
 
@@ -74,37 +67,90 @@ class TagFaces:
             try:
                     # Load image and detect faces
                     #img = face_recognition.load_image_file(row[1],scale=True)
-                    img = scale_image(row[1])
-                    face_locations = face_recognition.face_locations(img)
-                    if len(face_locations) == 0:
-                        continue
+                    # img = scale_image(row[1])
+                    # face_locations = face_recognition.face_locations(img)
+                    # if len(face_locations) == 0:
+                    #     continue
 
                     # Verify face identity
                     recognized_faces = ";".split(row[2])
-                    for face in self.known_faces:
-                        if face[0] in recognized_faces:
+                    try:
+                        cropped_faces = self.detect_and_crop_faces(row[1])
+                        if len(cropped_faces) == 0:
                             continue
-                        # print(f"\tcomparing to {face[1]}")
-                        rs=self.test(img,face[2])
-                        if rs:
-                            recognized_faces.append(face[0])
-                            print(f"Faces match: {face[1]} is in {row[1]}!")
-
+                        for face_region in cropped_faces:
+                            face_region.save("/tmp/cropped_face.jpg")
+                            embed = self.get_face_embedding("/tmp/cropped_face.jpg")
+                            #embed = self.get_face_embedding(row[1])
+                            for face in self.known_faces:
+                                if face[0] in recognized_faces:
+                                    continue
+                                rs = self.compare_embeddings(face[2], embed)
+                                if rs:
+                                    recognized_faces.append(face[0])
+                                    print(f"Faces match: {face[1]} is in {row[1]}!")
+                    except Exception as e:
+                        print(f"Error processing image {row[1]}: {e}")
                     if len(recognized_faces) > 0:
                         cursor = conn.cursor()
                         cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'.join(recognized_faces),row[0],))
-                        cursor.close()
+                        conn.commit()
             except:
                 print(row[1]+" could not be recognized")
         conn.close()
 
+    def get_face_embedding(self, image_path):
+        """
+        Extracts and returns facial embeddings from an image.
 
-    def test(self,img, face):
-        # my_face_encoding now contains a universal 'encoding' of my facial features that can be compared to any other picture of a face!
-        unknown_face_encoding = face_recognition.face_encodings(img, model="cnn")[0]
-        # Now we can see the two face encodings are of the same person with `compare_faces`!
-        results = face_recognition.compare_faces([face], unknown_face_encoding, tolerance=0.6)
-        return results[0]
+        Parameters:
+        - image_path: Path to the image file
+
+        Returns:
+        - embeddings: Tensor containing facial embeddings
+        """
+        img = Image.open(image_path).convert('RGB')
+        img_tensor = self.transform(img)
+        # Ensure batch dimension is added
+        img_tensor = img_tensor.unsqueeze(0)
+
+        with torch.no_grad():
+            embedding = self.model(img_tensor)
+
+        return embedding
+
+
+    def compare_embeddings(self, embedding1, embedding2, threshold=0.6):
+        """
+        Compares two facial embeddings.
+
+        Parameters:
+        - embedding1: First facial embedding
+        - embedding2: Second facial embedding
+        - threshold: Similarity threshold (default: 0.6)
+
+        Returns:
+        - True if embeddings are similar enough, False otherwise
+        """
+        similarity = torch.nn.functional.cosine_similarity(embedding1, embedding2)
+        return similarity.item() >= self.threshold
+
+
+    def detect_and_crop_faces(self, image_path):
+        img_raw = Image.open(image_path).convert('RGB')
+        img=np.array(img_raw)
+
+        face_locations = face_recognition.face_locations(img)
+        cropped_faces = []
+
+        for location in face_locations:
+            top = location[0]
+            right = location[1]
+            bottom = location[2]
+            left = location[3]
+            face_region = img_raw.crop((left, top, right, bottom))
+            cropped_faces.append(face_region)
+        return cropped_faces
 
 if __name__ == "__main__":
     tagger = TagFaces()

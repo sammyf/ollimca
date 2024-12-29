@@ -7,5 +7,8 @@ chromadb
 pillow
 PyQt6
 pyyaml
-face-recognition
-git+https://github.com/ageitgey/face_recognition_models
+torch>=2.0.0
+torchvision
+facenet-pytorch
+pillow
+face_recognition
