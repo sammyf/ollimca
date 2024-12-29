@@ -44,9 +44,16 @@ Run ./install.sh
 update config.yaml with the relevant data. The chromadb and sqlite paths are just the name of the files created. 
 They will be located in the 'db' directory. 
 
-The default models should work even for people without GPU, but it will
-still be slow. Also : while moondream is a great and very small vision model *most of the time*, it has a small bug 
-which makes it fail on some images.
+## about the config and the default LLMs :
+The default embedding model (nomic-embed-text) works qwell even without a GPU. I run mine when querying on a 
+raspberry pi 5/8GB. Querying an existing database is therefore completely realistic with very low specs!
+*Generating* the database, on the other hand, will **not work** with the default vision model, moondream2, on a CPU bound
+system!
+There is a bug in ollama's upstream inference engine (llama.cpp) which breaks moondream2. It works fine on GPU though!
+The next 'smallest' model would be either a highly quantized Llava:7b or llama-phi3, but both options are a LOT slower
+than moondream and need much more ram.
+
+Databases are stored ihn db/ in the root directory.
 
 Do not forget to set an image viewer that should be started when an image is clicked.  (/usr/bin/gwenview if you are
 using KDE for example)
