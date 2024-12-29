@@ -70,14 +70,13 @@ class TagFaces:
         cursor.close()
         rs = []
         for row in rows:
-            print(f"processing {row[1]}:")
+            print(f"processing {row[1]}")
             try:
                     # Load image and detect faces
                     #img = face_recognition.load_image_file(row[1],scale=True)
                     img = scale_image(row[1])
                     face_locations = face_recognition.face_locations(img)
                     if len(face_locations) == 0:
-                        print(f"no face found in {row[1]}")
                         continue
 
                     # Verify face identity
