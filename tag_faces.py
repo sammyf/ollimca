@@ -28,7 +28,7 @@ def scale_image(input_path, max_size=2000):
         new_height = int(height * scale_factor)
 
         # Resize the image
-        resized_img = img.resize((new_width, new_height), Image.FILTERED)
+        resized_img = img.resize((new_width, new_height))
         return np.array(resized_img)
 
 
@@ -103,7 +103,7 @@ class TagFaces:
         # my_face_encoding now contains a universal 'encoding' of my facial features that can be compared to any other picture of a face!
         unknown_face_encoding = face_recognition.face_encodings(img, model="cnn")[0]
         # Now we can see the two face encodings are of the same person with `compare_faces`!
-        results = face_recognition.compare_faces([face], unknown_face_encoding, tolerance=0.5)
+        results = face_recognition.compare_faces([face], unknown_face_encoding, tolerance=0.6)
         return results[0]
 
 if __name__ == "__main__":
