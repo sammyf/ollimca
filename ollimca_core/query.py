@@ -63,7 +63,7 @@ class Query:
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
         if content.strip() != '':
-            cursor.execute(f'SELECT id, path, content FROM images WHERE (content LIKE ? OR path LIKE ?) {add_on} ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', (page-1)*items_per_page, items_per_page,))
+            cursor.execute(f'SELECT id, path, content FROM images WHERE (content LIKE ? OR path LIKE ?) {add_on} ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page,))
         else:
             cursor.execute(
                 f'SELECT id, path, content FROM images WHERE {add_on} ORDER BY id LIMIT ?, ?',

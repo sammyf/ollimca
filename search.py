@@ -4,14 +4,18 @@ import os
 import threading
 from PyQt6.QtWidgets import QDialog, QApplication, QToolTip, QCheckBox, QMainWindow, QWidget, QSizePolicy, QScrollArea, \
     QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QToolButton, QAbstractButton
-from PyQt6.QtGui import QPixmap, QIcon, QCursor, QContextMenuEvent
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QCursor, QContextMenuEvent
 from PyQt6.QtCore import Qt, QSize,pyqtSignal
 from ollimca_core.query import Query
 from ollimca_core.config import Config
 import textwrap
 
+global VERSION
+VERSION="0.2.5"
 
 def wrap_text(text, max_width=80):
+    if text is None:
+        return ""
     lines = text.split('\n')
     wrapped_lines = [textwrap.fill(line, width=max_width) for line in lines]
     return '\n'.join(wrapped_lines)
@@ -90,9 +94,10 @@ class MainWindow(QMainWindow):
 
     already_shown_images = []
     checksums = []
+    wanted_persons = None
     delete_duplicates_missing = False
-    current_page_sql = 1
-    current_page_chroma = 1
+    current_page_sql = 0
+    current_page_chroma = 0
     items_per_page = 12
     continuous_scroll = False
     do_not_scroll = False
@@ -170,11 +175,20 @@ class MainWindow(QMainWindow):
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll_area.setWidget(results_display)
         main_layout.addWidget(scroll_area)
+        version_label = self.create_version_label(VERSION)
+        main_layout.addWidget(version_label)
 
         results_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Connect the scrollbar's valueChanged signal to a slot
         scroll_area.verticalScrollBar().valueChanged.connect(self.on_scroll_value_changed)
+
+    def create_version_label(self, version_number):
+        label = QLabel(f"Version: {version_number}")
+        font = QFont()
+        font.setPointSize(8)  # Set the font size to be small
+        label.setFont(font)
+        return label
 
     def get_known_persons(self):
         conn = sqlite3.connect(self.sqlite_path)
@@ -195,21 +209,25 @@ class MainWindow(QMainWindow):
 
     def on_search_changed(self):
         self.continuous_scroll = False
-        self.current_page_sql = 1
-        self.current_page_chroma = 1
+        self.current_page_sql = 0
+        self.current_page_chroma = 0
         self.col = 0
         self.row = 0
         self.already_shown_images = []
         self.checksums = []
 
     def on_search_clicked(self):
+        new_wanted_persons = self.person_popup.get_checked_names()
+        if new_wanted_persons != self.wanted_persons:
+            self.on_search_changed()
+        self.wanted_persons = new_wanted_persons
+
         query = Query( self.sqlite_path,self.chroma_path, self.embedding_model, self.ollama_embed)
         content = self.inputs["Content"].text()
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()
-        wanted_persons = self.person_popup.get_checked_names()
 
-        (image_details, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing, wanted_persons)
+        (image_details, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing, self.wanted_persons)
         if len(image_details) == 0:
             self.ignore_signal=True
             self.continuous_scroll=False
