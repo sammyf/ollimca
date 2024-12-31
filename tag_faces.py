@@ -1,4 +1,5 @@
 #!/bin/bash
+from ctypes import c_int
 from ctypes.wintypes import tagMSG
 
 import face_recognition
@@ -27,7 +28,7 @@ class TagFaces:
 
         self.detector = get_frontal_face_detector()
         self.predictor = shape_predictor("shape_predictor_68_face_landmarks.dat")
-        self.threshold = 0.4
+        self.threshold = 0.5
 
         cfg = Config()
         config = cfg.ReadConfig()
@@ -35,7 +36,7 @@ class TagFaces:
         known_faces_path=glob.glob("faces/*.jpg")
         for face in known_faces_path:
             callname = os.path.basename(face).replace('.jpg','')
-            id = self.find_or_create_id(face)
+            id = self.find_or_create_id(callname)
             self.known_faces.append([str(id), callname,self.get_face_embedding(face)])
 
     def find_or_create_id(self, callname):
@@ -64,39 +65,34 @@ class TagFaces:
         rs = []
         for row in rows:
             print(f"processing {row[1]}")
-            try:
-                    # Load image and detect faces
-                    #img = face_recognition.load_image_file(row[1],scale=True)
-                    # img = scale_image(row[1])
-                    # face_locations = face_recognition.face_locations(img)
-                    # if len(face_locations) == 0:
-                    #     continue
 
-                    # Verify face identity
-                    recognized_faces = ";".split(row[2])
-                    try:
-                        cropped_faces = self.detect_and_crop_faces(row[1])
-                        if len(cropped_faces) == 0:
+            # Verify face identity
+            if row[2] != "" and row[2] != None:
+                recognized_faces = ";".split(row[2])
+            else:
+                recognized_faces = []
+            try:
+                cropped_faces = self.detect_and_crop_faces(row[1])
+                if len(cropped_faces) == 0:
+                    continue
+                for face_region in cropped_faces:
+                    face_region.save("/tmp/cropped_face.jpg")
+                    embed = self.get_face_embedding("/tmp/cropped_face.jpg")
+                    #embed = self.get_face_embedding(row[1])
+                    for face in self.known_faces:
+                        if face[0] in recognized_faces:
                             continue
-                        for face_region in cropped_faces:
-                            face_region.save("/tmp/cropped_face.jpg")
-                            embed = self.get_face_embedding("/tmp/cropped_face.jpg")
-                            #embed = self.get_face_embedding(row[1])
-                            for face in self.known_faces:
-                                if face[0] in recognized_faces:
-                                    continue
-                                rs = self.compare_embeddings(face[2], embed)
-                                if rs:
-                                    recognized_faces.append(face[0])
-                                    print(f"Faces match: {face[1]} is in {row[1]}!")
-                    except Exception as e:
-                        print(f"Error processing image {row[1]}: {e}")
-                    if len(recognized_faces) > 0:
-                        cursor = conn.cursor()
-                        cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'.join(recognized_faces),row[0],))
-                        conn.commit()
-            except:
-                print(row[1]+" could not be recognized")
+                        rs = self.compare_embeddings(face[2], embed)
+                        if rs:
+                            recognized_faces.append(face[0])
+                            print(f"Faces match: {face[1]} is in {row[1]}!")
+                            continue
+            except Exception as e:
+                print(f"Error processing image {row[1]}: {e}")
+            if len(recognized_faces) > 0:
+                cursor = conn.cursor()
+                cursor.execute('UPDATE images SET persons_ids=? WHERE id=?', (';'+';'.join(recognized_faces)+';',row[0],))
+                conn.commit()
         conn.close()
 
     def get_face_embedding(self, image_path):

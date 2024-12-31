@@ -20,24 +20,54 @@ class Query:
             host=ollama_embed
         )
 
-    def query(self, content, mood, colors, page_sql, page_chroma, items_per_page, already_shown_images, checksums, delete_duplicates_missing):
+    def query(self, content, mood, colors, page_sql, page_chroma, items_per_page, already_shown_images, checksums, delete_duplicates_missing, wanted_persons):
         images=[]
         self.checksums = checksums
         self.already_shown_images = already_shown_images
         self.delete_duplicate_missing = delete_duplicates_missing
-        if content.strip() != '':
-            images = self.query_sqlite(content, page_sql, items_per_page)
-            page_sql +=1
+        self.valid_ids = []
+        if len(wanted_persons)>0:
+            self.valid_ids = self.query_image_with_wanted_persons(wanted_persons)
+
+        images = self.query_sqlite(content, page_sql, items_per_page)
+        page_sql +=1
         if len(images) <= items_per_page:
             chroma_rs=self.query_chroma(content, mood, colors, page_chroma, items_per_page)
             images.extend(chroma_rs)
             page_chroma += 1
         return (images, page_sql, page_chroma,self.already_shown_images, self.checksums)
 
-    def query_sqlite(self, content, page, items_per_page):
+    def query_image_with_wanted_persons(self, wanted_persons):
+        tmp_for_sql=[]
+        for person in wanted_persons:
+            tmp_for_sql.append(f"persons_ids LIKE '%;{str(person)};%'")
+        sql_wanted_persons = f"({' OR '.join(tmp_for_sql)})"
+
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT id, path, content FROM images WHERE content LIKE ? OR path LIKE ? ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', page*items_per_page, items_per_page))
+        cursor.execute(f'SELECT id FROM images WHERE 1=1 AND {sql_wanted_persons}')
+        raw_ids = cursor.fetchall()
+        ids = []
+        for id in raw_ids:
+            ids.append(str(id[0]))
+        return ids
+
+    def query_sqlite(self, content, page, items_per_page):
+        add_on=""
+        if content.strip() == '' and len(self.valid_ids) == 0:
+            return []
+        if content.strip() != '':
+            add_on=" AND "
+        if len(self.valid_ids) > 0:
+            add_on += f"id IN ({','.join(self.valid_ids)})"
+        conn = sqlite3.connect(self.sqlite_path)
+        cursor = conn.cursor()
+        if content.strip() != '':
+            cursor.execute(f'SELECT id, path, content FROM images WHERE (content LIKE ? OR path LIKE ?) {add_on} ORDER BY id LIMIT ?, ?', ('% ' + content + ' %', '% ' + content + ' %', (page-1)*items_per_page, items_per_page,))
+        else:
+            cursor.execute(
+                f'SELECT id, path, content FROM images WHERE {add_on} ORDER BY id LIMIT ?, ?',
+                (page * items_per_page, items_per_page,))
         paths = cursor.fetchall()
         rs = []
         for row in paths:
@@ -58,6 +88,8 @@ class Query:
             search_query += "\n\"\"the overall mood conveyed by the image is " + mood+"\"\""
         if colors.strip() != "":
             search_query += "\n\"\"the overall color scheme of this image is " + colors+"\"\""
+        if search_query == "":
+            return []
 
         response = self.ollama_embed_client.embeddings(
             prompt=search_query,
@@ -65,10 +97,17 @@ class Query:
             keep_alive=-1
         )
         collection = self.chroma_client.get_or_create_collection(name='images')
-        results = collection.query(
-            query_embeddings=[response['embedding']],
-            n_results=(page * items_per_page),
-        )
+        if len(self.valid_ids) > 0:
+            results = collection.query(
+                query_embeddings=[response['embedding']],
+                n_results=(page * items_per_page),
+                where={"ids": {"$in": self.valid_ids}}
+            )
+        else:
+            results = collection.query(
+                query_embeddings=[response['embedding']],
+                n_results=(page * items_per_page),
+            )
         images = []
         if len(results) > 0:
             selected_images = 0

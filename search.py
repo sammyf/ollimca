@@ -1,7 +1,9 @@
+import sqlite3
 import sys
 import os
 import threading
-from PyQt6.QtWidgets import QApplication, QToolTip, QCheckBox, QMainWindow, QWidget, QSizePolicy, QScrollArea, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QDialog, QApplication, QToolTip, QCheckBox, QMainWindow, QWidget, QSizePolicy, QScrollArea, \
+    QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QToolButton, QAbstractButton
 from PyQt6.QtGui import QPixmap, QIcon, QCursor, QContextMenuEvent
 from PyQt6.QtCore import Qt, QSize,pyqtSignal
 from ollimca_core.query import Query
@@ -13,6 +15,43 @@ def wrap_text(text, max_width=80):
     lines = text.split('\n')
     wrapped_lines = [textwrap.fill(line, width=max_width) for line in lines]
     return '\n'.join(wrapped_lines)
+
+class PopupDialog(QDialog):
+    def __init__(self, parent=None, options=None, items_per_line=3):
+        super().__init__(parent)
+        if options is None:
+            options = []
+        self.setWindowTitle("Select Names")
+        self.setGeometry(100, 100, 300, 400)
+        self.layout = QVBoxLayout()
+
+        self.checkbox_dict = {}
+
+        items_in_line=0
+        line = QHBoxLayout()
+        for option in options:
+            if items_in_line == items_per_line:
+                items_in_line = 0
+                self.layout.addLayout(line)
+                line = QHBoxLayout()
+
+            checkbox = QCheckBox(option["name"], self)
+            # checkbox.setAccessibleName(option["name"])
+            line.addWidget(checkbox)
+            self.checkbox_dict[option["id"]] = checkbox
+            items_in_line += 1
+
+        if items_in_line > 0:
+            self.layout.addLayout(line)
+
+        self.setLayout(self.layout)
+
+    def get_checked_names(self):
+        checked_names = []
+        for id,checkbox in self.checkbox_dict.items():
+            if checkbox.isChecked():
+                checked_names.append(id)
+        return checked_names
 
 
 class ClickableLabel(QLabel):
@@ -73,6 +112,8 @@ class MainWindow(QMainWindow):
         self.ollama_embed = config["ollama_embed"]
         self.setWindowTitle("Ollimca (OLLama IMage CAtegoriser)")
         self.setGeometry(100, 100, 800, 600)
+        self.known_persons = self.get_known_persons()
+        self.person_popup = PopupDialog(self, options=self.known_persons)
 
         # Create the main widget and layout
         central_widget = QWidget()
@@ -98,9 +139,17 @@ class MainWindow(QMainWindow):
 
         search_form_layout.addLayout(button_checkbox_layout)
 
+        options_layout = QHBoxLayout()
         delete_duplicates_checkbox = QCheckBox("Delete Duplicates and Missing Images")
         delete_duplicates_checkbox.stateChanged.connect(self.on_delete_duplicates_changed)
-        search_form_layout.addWidget(delete_duplicates_checkbox)
+
+        button = QPushButton("Search for recognized face", self)
+        button.clicked.connect(self.open_popup)
+        options_layout.addWidget(delete_duplicates_checkbox)
+        options_layout.addWidget(button)
+
+        search_form_layout.addLayout(options_layout)
+        # $$$$search_form_layout.addWidget(delete_duplicates_checkbox)
 
         search_button = QPushButton("Search")
         search_button.clicked.connect(self.on_search_clicked)
@@ -127,6 +176,20 @@ class MainWindow(QMainWindow):
         # Connect the scrollbar's valueChanged signal to a slot
         scroll_area.verticalScrollBar().valueChanged.connect(self.on_scroll_value_changed)
 
+    def get_known_persons(self):
+        conn = sqlite3.connect(self.sqlite_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id,callname FROM persons ORDER BY callname')
+        rows = cursor.fetchall()
+        conn.close()
+        rs=[]
+        for row in rows:
+            rs.append({"name":row[1],"id":row[0]})
+        return rs
+
+    def open_popup(self):
+        self.person_popup.exec()
+
     def on_delete_duplicates_changed(self, state):
         self.delete_duplicates_missing=(state == 2)
 
@@ -144,19 +207,36 @@ class MainWindow(QMainWindow):
         content = self.inputs["Content"].text()
         mood = self.inputs["Mood"].text()
         color = self.inputs["Color"].text()
+        wanted_persons = self.person_popup.get_checked_names()
 
-        (image_details, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing)
-        self.display_images(image_details)
+        (image_details, self.current_page_sql, self.current_page_chroma, self.already_shown_images, self.checksums) = query.query(content, mood, color, self.current_page_sql, self.current_page_chroma, self.items_per_page, self.already_shown_images, self.checksums, self.delete_duplicates_missing, wanted_persons)
+        if len(image_details) == 0:
+            self.ignore_signal=True
+            self.continuous_scroll=False
+            self.display_fail()
+        else:
+            self.display_images(image_details)
+
+    def display_fail(self):
+        label = ClickableLabel("", wrap_text("No more images fitting this query were found!"))
+        label.setFixedHeight(300)
+        label.setFixedWidth(300)
+        label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        label.setText("No more images fitting this query were found!")
+        self.grid_layout.addWidget(label, self.row, self.col)
+
+    def clear_display(self):
+        # Clear previous results
+        for i in reversed(range(self.grid_layout.count())):
+            widget = self.grid_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
+        self.row=0
+        self.col=0
 
     def display_images(self, image_details):
         if self.continuous_scroll == False:
-            # Clear previous results
-            for i in reversed(range(self.grid_layout.count())):
-                widget = self.grid_layout.itemAt(i).widget()
-                if widget is not None:
-                    widget.deleteLater()
-            self.row=0
-            self.col=0
+            self.clear_display()
 
         # Display new images
         self.grid_layout.setSpacing(0)
