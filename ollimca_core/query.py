@@ -31,7 +31,7 @@ class Query:
 
         images = self.query_sqlite(content, page_sql, items_per_page)
         page_sql +=1
-        if len(images) <= items_per_page:
+        if len(images) < items_per_page:
             chroma_rs=self.query_chroma(content, mood, colors, page_chroma, items_per_page)
             images.extend(chroma_rs)
             page_chroma += 1
@@ -56,10 +56,11 @@ class Query:
         add_on=""
         if content.strip() == '' and len(self.valid_ids) == 0:
             return []
-        if content.strip() != '':
-            add_on=" AND "
+
         if len(self.valid_ids) > 0:
             add_on += f"id IN ({','.join(self.valid_ids)})"
+        if content.strip() != '' and add_on != "":
+            add_on = " AND "+add_on
         conn = sqlite3.connect(self.sqlite_path)
         cursor = conn.cursor()
         if content.strip() != '':
