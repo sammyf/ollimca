@@ -32,7 +32,7 @@ class TagFaces:
 
         cfg = Config()
         config = cfg.ReadConfig()
-        self.sqlite_path = os.path.join("db", config['db']['sqlite_path'])
+        self.sqlite_path = config['db']['sqlite_path']
         known_faces_path=glob.glob("faces/*.jpg")
         for face in known_faces_path:
             callname = os.path.basename(face).replace('.jpg','')

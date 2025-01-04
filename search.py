@@ -11,7 +11,7 @@ from ollimca_core.config import Config
 import textwrap
 
 global VERSION
-VERSION="0.2.5"
+VERSION="0.2.6"
 
 def wrap_text(text, max_width=80):
     if text is None:
@@ -110,8 +110,8 @@ class MainWindow(QMainWindow):
 
         cfg = Config()
         config = cfg.ReadConfig()
-        self.chroma_path = os.path.join("db", config['db']['chroma_path'])
-        self.sqlite_path = os.path.join("db", config['db']['sqlite_path'])
+        self.chroma_path = config['db']['chroma_path']
+        self.sqlite_path = config['db']['sqlite_path']
         self.embedding_model = config["embedding_model"]
         self.image_viewer = config["image_viewer"]
         self.ollama_embed = config["ollama_embed"]
@@ -306,7 +306,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    icon = QIcon("icon.png")  # Replace with your icon file path
+    icon = QIcon("./icon.png")  # Replace with your icon file path
     app.setWindowIcon(icon)
     window = MainWindow()
     window.show()

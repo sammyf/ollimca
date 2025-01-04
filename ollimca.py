@@ -306,8 +306,8 @@ if __name__ == "__main__":
     embedding_model = config["embedding_model"]
     temperature = config["temperature"]
 
-    chroma_path = os.path.join("db", config['db']['chroma_path'])
-    sqlite_path = os.path.join("db", config['db']['sqlite_path'])
+    chroma_path = config['db']['chroma_path']
+    sqlite_path = config['db']['sqlite_path']
 
     ollama_crawl = config["ollama_crawl"]
     ollama_embed = config["ollama_embed"]

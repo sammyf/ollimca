@@ -8,5 +8,5 @@
    temperature: 0
 
    db:
-     chroma_path: "ollimca_chroma.db"
-     sqlite_path: "ollimca_sqlite3.db"
+     chroma_path: "db/ollimca_chroma.db"
+     sqlite_path: "db/ollimca_sqlite3.db"

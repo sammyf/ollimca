@@ -2,6 +2,8 @@
 
 (Licensed under GPLv3. See the LICENSE file for details.)
 
+*It's important you update (instruction below) if you already analyzed images and don't want to lose the database!*
+
 This small tool crawls through all the images in directories and their subdirectories and sends 
 them to a LLM with vision running on a local instance of 'ollama' ( https://ollama.com )
 The LLM then writes a description of the image which is stored in a database. 
@@ -12,6 +14,8 @@ You can then use the provided stand-alone frontend to search for images featurin
 a small video tour of Ollimca can be found here : (https://www.youtube.com/watch?v=LFs3BUsdsxA)
 
 ### changelog :
+* 0.2.6:
+  * the databases location in the config can now be absolute. No db/ is added in front of the path!
 * 0.2.5:
   * an actual Version Tag! Happy New Year (2).0.2.5!
   * new CLI Tool : tag_faces.py (needs a GPU!), and very error prone!
@@ -21,6 +25,11 @@ a small video tour of Ollimca can be found here : (https://www.youtube.com/watch
   * (new) right clicking brings up the generated description for the current image
   * added a checkbox in the search frontend to physically delete duplicate images (based on their checksum) and then
   remove missing files from the databases. (please see the notes!)
+
+### how to update to 2.6:
+* *First of all, make a backup copy of the db directory!*
+* Modify the chroma_path and sqlite_path in your config.yaml. Check config.yaml.dist for the new correct path.
+* run `./update.sh`
 
 ### requirements : 
 * python3.x 
