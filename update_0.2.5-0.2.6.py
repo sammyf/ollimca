@@ -1,7 +1,7 @@
 from ollimca_core import config
 import sqlite3
 
-cfg = config.Config()
+cfg = config.Config().ReadConfig()
 
 conn = sqlite3.connect(cfg['db']['sqlite_path'])
 

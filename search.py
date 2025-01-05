@@ -11,7 +11,7 @@ from ollimca_core.config import Config
 import textwrap
 
 global VERSION
-VERSION="0.2.7"
+VERSION="0.2.7.2"
 
 def wrap_text(text, max_width=80):
     if text is None:
