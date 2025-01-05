@@ -28,7 +28,7 @@ import stat
 app = Flask(__name__)
 CORS(app)
 
-global ollama_client, ollama_embed_client, chroma_path, thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
+global all_files, all_pct, ollama_client, ollama_embed_client, chroma_path, thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
 
 vision_model = "moondream:latest"
 embedding_model = "nomic-embed-text:latest"
@@ -46,10 +46,19 @@ processed_files = []
 thread_locked = False
 chroma_client = None
 
+all_files = 0
+all_pct = 0
+
 class ImageDescription(BaseModel):
     description: str
     mood: str
     overall_color_scheme: str
+
+def count_files(directory):
+    total_files = 0
+    for _, _, files in os.walk(directory):
+        total_files += len(files)
+    return total_files
 
 def setup_sqlite():
     conn = sqlite3.connect(sqlite_path)
@@ -267,28 +276,24 @@ def file_generator(directory_path, complex):
             print(f"Error processing directory: {str(e)}\n")
         thread_locked = False
 
-@app.route('/api/query', methods=['POST'])
-def find_images():
-    data = request.get_json()
-    content = data.get('content')
-    mood = data.get('mood')
-    colors = data.get('color')
-    page = data.get('page')
-    items_per_page = data.get('items_per_page')
-    query = Query(sqlite_path, chroma_path, embedding_model)
-    (images, page_sql, page_chroma, _) = query.Query(content, mood, colors, page, page, items_per_page, [], False)
-    return Response(images, mimetype='application/json'), 200
-
-
 @app.route('/api/status', methods=['GET'])
 def status():
-    return "\n ".join(processed_files[-50:])
+    global processed_files, all_files, all_pct
+    if all_files>0:
+        pct = str(len(processed_files))+"/"+str(all_files)+f" ({(len(processed_files)*100/all_files):.2f}%)"
+    else:
+        pct = ""
+    return "\n ".join(processed_files[-40:])+"\n\n"+pct
 
 @app.route("/api/categorize", methods=['POST'])
 def categorize():
+    global all_files, all_pct
+
     complex = 0
     # Decode the bytes-like object to a string
     directory_path = request.form['dPath']
+    all_files = count_files(directory_path)
+
     if "complex" in request.form:
         complex = 1
     if thread_locked:
