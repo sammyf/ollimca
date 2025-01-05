@@ -1,4 +1,3 @@
-#!python
 import math
 import os
 import hashlib

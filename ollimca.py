@@ -59,7 +59,7 @@ def setup_sqlite():
 
     # Check if table exists, if not, create it
     cursor.execute('''
- create table images
+ create table  if not exists images
 (
     id            INTEGER
         primary key autoincrement,
@@ -72,7 +72,7 @@ def setup_sqlite():
 )
     ''')
     cursor.execute('''
-create table persons
+create table if not exists persons
 (
     id       integer not null
         constraint id
