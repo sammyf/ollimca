@@ -59,15 +59,29 @@ def setup_sqlite():
 
     # Check if table exists, if not, create it
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS images (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT,
-        width INTEGER,
-        height INTEGER,
-        content TEXT,
-        creation_date TEXT
-    )
+ create table images
+(
+    id            INTEGER
+        primary key autoincrement,
+    path          TEXT,
+    width         INTEGER,
+    height        INTEGER,
+    content       TEXT,
+    creation_date TEXT,
+    persons_ids   TEXT
+)
     ''')
+    cursor.execute('''
+create table persons
+(
+    id       integer not null
+        constraint id
+            primary key autoincrement,
+    callname TEXT    not null
+        constraint persons_pk
+            unique
+)
+        ''')
     conn.commit()
     conn.close()
 
@@ -153,7 +167,7 @@ def complex_image_query(image_path):
         messages=[
             {
                 'role': 'user',
-                'content': 'describe the content of that image. What can be seen? If there is text visible, what does it say? use detailed keywords!',
+                'content': 'describe the content of that image. What can be seen? If there is text visible, what does it say? use detailed keywords! Always answer in english',
                 'images': [image_path],
             },
         ],
@@ -174,7 +188,7 @@ def simple_image_query(image_path):
         messages=[
             {
                 'role': 'user',
-                'content': 'Tell me the following about this image, be as detailed as possible: description, mood, color names of the overall color scheme.',
+                'content': 'Tell me the following about this image, be as detailed as possible: description, mood, color names of the overall color scheme. Always answer in english',
                 'images': [image_path],
             },
         ],
