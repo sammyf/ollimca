@@ -2,7 +2,8 @@
 
 (Licensed under GPLv3. See the LICENSE file for details.)
 
-*It's important you update (instruction below) if you already analyzed images and don't want to lose the database!*
+* It's important you update (instruction below) if you already analyzed images before facial recognition was added 
+and don't want to lose the database!*
 
 This small tool crawls through all the images in directories and their subdirectories and sends 
 them to a LLM with vision running on a local instance of 'ollama' ( https://ollama.com )
@@ -11,9 +12,12 @@ The LLM then writes a description of the image which is stored in a database.
 You can then use the provided stand-alone frontend to search for images featuring the keywords you enter.
 
 
-a small video tour of Ollimca can be found here : (https://www.youtube.com/watch?v=LFs3BUsdsxA)
+A small video tour of Ollimca can be found here : (https://www.youtube.com/watch?v=LFs3BUsdsxA)
 
 ### changelog :
+* 0.2.7:
+  * unified the face recognition and the vision catalogizer on the server side
+  * hide the face recognition if no face was recognized yet
 * 0.2.6:
   * the databases location in the config can now be absolute. No db/ is added in front of the path!
 * 0.2.5:
@@ -34,6 +38,9 @@ a small video tour of Ollimca can be found here : (https://www.youtube.com/watch
 ### requirements : 
 * python3.x 
 * ollama (https://ollama.com)
+* an installed vision model (moondream, llama3.2-vision or minicpm-v for example)
+* an installed embedding model (nomic-text-embed or granite3.1-embed for example). Note that you won't be able to change
+the embed model later without rebuilding the whole database!
 * to query the database : `nomic-embed-text` or another embedding model installed. (install with `ollama pull nomic-embed-text`) 
 * to analyse the images : a vision model from the ollama library (moondream, llama3.2-vision, llava, bakllava, ...)
 * for face recognition, make sure the models are installed with :` pip install git+https://github.com/ageitgey/face_recognition_models`

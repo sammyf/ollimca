@@ -30,12 +30,12 @@
         }
 
         html {
-            background-color: #333;
+            background-color: #6c6b6b;
             color: #cccccc;
         }
 
-        input {
-            background-color: #001c00;
+        input    {
+            background-color: #4ba585;
             color: white;
             font-family: bolder;
             font-size: large;
@@ -46,21 +46,62 @@
         button {
             background-color: #001c00;
             color: white;
+            max-width: 250px;
+            min-width: 250px;
+        }
+        hr {
+            border: 1px solid #cccccc;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px; /* Optional: Adds space between buttons */
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Ensure buttons take full width when stacked */
+        .button-container button {
+            flex-basis: calc(50% - 10px); /* Adjusts for the gap */
+        }
+
+        @media (max-width: 600px) {
+            .button-container button {
+                flex-basis: 100%; /* Stacks buttons vertically on smaller screens */
+            }
+        }
+        #categorize-box {
+            border: 1px solid #cccccc;
+            background-color: #535353;
+            padding: 10px;
+        }
+        #spinner {
+            width:100%;
+            height:6px;
         }
     </style>
 </head>
 <body>
+
+<h3 id="title">Ollama IMage CAtegoriser<br>version <span id="title_version"></span></h3>
 <div id="controls">
     <form id="form" action="/api/categorize">
         <label for="dPath">Absolute path of the directory to crawl through:</label><br>
         <input type="text" id="dPath" name="dPath" value=""><br>
-        <label for="complex">Use multiple queries instead of one. Much slower, but better results!</label>
-        <input type="checkbox" id="complex" name="complex"><br>
-        <button hx-post="/api/categorize" hx-trigger="click" hx-swap="beforeend" hx-target="#progress" id="sendbutton" hx-indicator="#spinner" autofocus>Look for images and categorize them</button>
+        <hr>
+        <div class="button-container">
+            <div id="categorize-box">
+                <label for="complex">Use multiple queries instead of one. Much slower, but better results!</label>
+                <input type="checkbox" id="complex" name="complex"><br>
+                <button hx-post="/api/categorize" hx-trigger="click" hx-swap="beforeend" hx-target="#progress" id="sendbutton1" hx-indicator="#spinner" autofocus>Look for images and categorize them</button>
+            </div>
+            <button hx-post="/api/facerec" hx-trigger="click" hx-swap="beforeend" hx-target="#progress" id="sendbutton2" hx-indicator="#spinner">Try to identify faces in the images<br>(experimental and needs a GPU!)</button>
+        </div>
     </form>
 </div>
-<img id="spinner" class="htmx-indicator" src="/imgs/spinner.gif">
+<img id="spinner" class="htmx-indicator" src="loader.gif">
 <div id="progress"></div>
+<div hx-get="/api/version" hx-trigger="load" hx-target="#title_version"></div>
+
 <script language="JavaScript" type="text/javascript">
             // Function to fetch data from the API and update the progress div
     function updateProgress() {
@@ -76,9 +117,8 @@
     }
 
     // Set up a timer to call updateProgress every 5 seconds
-
     //document.getElementById('sendbutton').addEventListener('htmx:afterOnLoad', function() {
-        setInterval(updateProgress, 60000);
+        setInterval(updateProgress, 30000);
     //});
 </script>
 </body>

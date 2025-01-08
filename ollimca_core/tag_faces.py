@@ -3,8 +3,8 @@ from ctypes import c_int
 from ctypes.wintypes import tagMSG
 
 import face_recognition
-import face_recognition_models
 import sqlite3
+
 from ollimca_core.config import Config
 import os
 import glob
@@ -28,7 +28,9 @@ class TagFaces:
 
         self.detector = get_frontal_face_detector()
         self.predictor = shape_predictor("shape_predictor_68_face_landmarks.dat")
-        self.threshold = 0.5
+        self.threshold = 0.6
+
+        self.output = ""
 
         cfg = Config()
         config = cfg.ReadConfig()
@@ -64,7 +66,9 @@ class TagFaces:
         cursor.close()
         rs = []
         for row in rows:
-            print(f"processing {row[1]}")
+            out = f"processing {row[1]}"
+            print(out)
+            self.output = f"\n{out}"
 
             # Verify face identity
             if row[2] != "" and row[2] != None:
@@ -85,7 +89,9 @@ class TagFaces:
                         rs = self.compare_embeddings(face[2], embed)
                         if rs:
                             recognized_faces.append(face[0])
-                            print(f"Faces match: {face[1]} is in {row[1]}!")
+                            out = f"Faces match: {face[1]} is in {row[1]}!"
+                            print(out)
+                            self.output += f"\n{out}"
                             continue
             except Exception as e:
                 print(f"Error processing image {row[1]}: {e}")
@@ -147,6 +153,9 @@ class TagFaces:
             face_region = img_raw.crop((left, top, right, bottom))
             cropped_faces.append(face_region)
         return cropped_faces
+
+    def status(self):
+        return self.output
 
 if __name__ == "__main__":
     tagger = TagFaces()

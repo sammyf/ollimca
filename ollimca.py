@@ -4,6 +4,8 @@ import json
 from sqlite3 import sqlite_version
 from ollimca_core.query import Query
 from ollimca_core.config import Config
+from ollimca_core.tag_faces import TagFaces
+from ollimca_core.version import Version
 from flask import Response
 
 from ollama import Client as OllamaClient
@@ -28,7 +30,7 @@ import stat
 app = Flask(__name__)
 CORS(app)
 
-global all_files, all_pct, ollama_client, ollama_embed_client, chroma_path, thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client
+global tf, all_files, all_pct, ollama_client, ollama_embed_client, chroma_path, thread_locked, processed_files, embedding_model, vector_db_path, sqlite_path,  temperature, vision_model, chroma_client, mode
 
 vision_model = "moondream:latest"
 embedding_model = "nomic-embed-text:latest"
@@ -37,6 +39,8 @@ ollama_crawl = "127.0.0.1:11434"
 ollama_embed = "127.0.0.1:11434"
 host = "127.0.0.1"
 port = "9706"
+mode = ""
+tf = TagFaces()
 
 ollama_client = None
 ollama_embed_client = None
@@ -59,6 +63,14 @@ def count_files(directory):
     for _, _, files in os.walk(directory):
         total_files += len(files)
     return total_files
+
+def count_files_in_DB():
+    global sqlite_path
+    conn=sqlite3.connect(sqlite_path)
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(id) FROM images")
+    cnt = cur.fetchone()[0]
+    return cnt
 
 def setup_sqlite():
     conn = sqlite3.connect(sqlite_path)
@@ -278,18 +290,25 @@ def file_generator(directory_path, complex):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    global processed_files, all_files, all_pct
-    if all_files>0:
-        pct = str(len(processed_files))+"/"+str(all_files)+f" ({(len(processed_files)*100/all_files):.2f}%)"
+    global processed_files, all_files, all_pct,mode,tf
+    if mode == "categorize":
+        if all_files>0:
+            pct = str(len(processed_files))+"/"+str(all_files)+f" ({(len(processed_files)*100/all_files):.2f}%)"
+        else:
+            pct = ""
+        return "\n ".join(processed_files[-40:])+"\n\n"+pct
+    elif mode == "facerec":
+        return "\n"+tf.status()
     else:
-        pct = ""
-    return "\n ".join(processed_files[-40:])+"\n\n"+pct
+        return "no process started yet"
 
 @app.route("/api/categorize", methods=['POST'])
 def categorize():
-    global all_files, all_pct
+    global all_files, all_pct, mode
     if thread_locked:
         return "processing still running"
+    else:
+        mode = 'categorize'
     complex = 0
     # Decode the bytes-like object to a string
     directory_path = request.form['dPath']
@@ -311,7 +330,29 @@ def categorize():
 
     return "processing ..."
 
+@app.route("/api/facerec", methods=['POST'])
+def face_recognition():
+    global all_files, all_pct, mode, tf
+    if thread_locked:
+        return "processing still running"
+    else:
+        mode = 'facerec'
+    # Decode the bytes-like object to a string
+    all_files = count_files_in_DB()
+    thread = threading.Thread(target=tf.add_tag_to_db)
+    thread.daemon = True
+    thread.start()
 
+    return "processing ..."
+
+@app.route("/api/version", methods=['GET','POST'])
+def version():
+    v = Version()
+    return v.get_version()
+
+@app.route("/loader.gif", methods=['GET'])
+def loader():
+    return send_file("img/loader.gif", mimetype='image/gif')
 @app.route("/", methods=['GET'])
 def index():
     with open("frontend/index.html", "r") as file:

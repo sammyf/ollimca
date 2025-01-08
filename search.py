@@ -8,10 +8,9 @@ from PyQt6.QtGui import QFont, QPixmap, QIcon, QCursor, QContextMenuEvent
 from PyQt6.QtCore import Qt, QSize,pyqtSignal
 from ollimca_core.query import Query
 from ollimca_core.config import Config
+from ollimca_core.version import Version
 import textwrap
 
-global VERSION
-VERSION="0.2.7.2"
 
 def wrap_text(text, max_width=80):
     if text is None:
@@ -119,6 +118,8 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 600)
         self.known_persons = self.get_known_persons()
         self.person_popup = PopupDialog(self, options=self.known_persons)
+        v=Version()
+        self.version = v.get_version()
 
         # Create the main widget and layout
         central_widget = QWidget()
@@ -176,7 +177,7 @@ class MainWindow(QMainWindow):
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll_area.setWidget(results_display)
         main_layout.addWidget(scroll_area)
-        version_label = self.create_version_label(VERSION)
+        version_label = self.create_version_label(self.version)
         main_layout.addWidget(version_label)
 
         results_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
