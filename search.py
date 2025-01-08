@@ -148,10 +148,11 @@ class MainWindow(QMainWindow):
         delete_duplicates_checkbox = QCheckBox("Delete Duplicates and Missing Images")
         delete_duplicates_checkbox.stateChanged.connect(self.on_delete_duplicates_changed)
 
-        button = QPushButton("Search for recognized face", self)
-        button.clicked.connect(self.open_popup)
-        options_layout.addWidget(delete_duplicates_checkbox)
-        options_layout.addWidget(button)
+        if len(self.known_persons) > 0:
+            button = QPushButton("Search for recognized face", self)
+            button.clicked.connect(self.open_popup)
+            options_layout.addWidget(delete_duplicates_checkbox)
+            options_layout.addWidget(button)
 
         search_form_layout.addLayout(options_layout)
         # $$$$search_form_layout.addWidget(delete_duplicates_checkbox)

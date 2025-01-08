@@ -11,4 +11,3 @@ torch>=2.0.0
 torchvision
 facenet-pytorch
 pillow
-face_recognition

@@ -252,7 +252,7 @@ def store_meta(image_path):
     return dbid
 
 def file_generator(directory_path, complex):
-        global processed_files
+        global processed_files, thread_locked
         thread_locked = True
         pattern = re.compile(r'.*.(jpg|jpeg|png)$', re.IGNORECASE)
         processed_files = fill_processed_files()
@@ -288,7 +288,8 @@ def status():
 @app.route("/api/categorize", methods=['POST'])
 def categorize():
     global all_files, all_pct
-
+    if thread_locked:
+        return "processing still running"
     complex = 0
     # Decode the bytes-like object to a string
     directory_path = request.form['dPath']
@@ -296,8 +297,7 @@ def categorize():
 
     if "complex" in request.form:
         complex = 1
-    if thread_locked:
-        return "processing still running"
+
 
     if not directory_path:
         return "No directory selected."
