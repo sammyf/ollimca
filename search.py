@@ -212,7 +212,7 @@ class MainWindow(QMainWindow):
     def on_search_changed(self):
         self.continuous_scroll = False
         self.current_page_sql = 0
-        self.current_page_chroma = 0
+        self.current_page_chroma = 1
         self.col = 0
         self.row = 0
         self.already_shown_images = []
